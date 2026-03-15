@@ -282,7 +282,7 @@ export interface DataConvSearchOptions {
   tenantId?: string;
   jurisdiction?: string;
   sector?: string;
-  softwareId: string;
+  softwareId?: string;
   resourceType: string;
   searchParams?: Record<string, unknown>;
   authorizationToken?: string;

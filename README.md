@@ -1,27 +1,40 @@
 # DataConv Client SDK for TypeScript
 
-SDK para consumir la API de preconversión de `adapter-ingestion-py`.
+TypeScript SDK for consuming the `adapter-ingestion-py` pre-conversion API.
 
-Incluye:
+It includes:
 
-- creación y polling de configuración tenant/software
-- subida de Excel/XLSX por DIDComm attachment o `multipart/form-data`
-- polling de `_upload-response`
-- helpers para leer el `Bundle` convertido y almacenar la última respuesta recibida
+- tenant/software configuration creation and polling
+- Excel/XLSX upload via DIDComm attachment or `multipart/form-data`
+- `_upload-response` polling
+- promotion through `Composition/_patch` and `Patient/_batch`
+- tenant-scoped search under `/host/.../org.hl7.fhir.api/{resourceType}/_search`
+- helpers to read the converted `Bundle` and keep the last received response
 
-## Instalación
+## Installation
 
 ```bash
 npm install dataconv-client-sdk-ts
 ```
 
-## Configuración
+## Configuration
 
 ```bash
 DATACONV_BASE_URL=http://localhost:8080
 ```
 
-## Uso básico
+## Basic usage
+
+Minimum end-to-end flow:
+
+1. Initialize the client and tokens.
+2. Create the tenant/software configuration.
+3. Wait for `_create-response`.
+4. Upload the Excel file.
+5. Wait for `_upload-response`.
+6. Review and promote with `_patch`.
+7. Publish aggregated resources with `_batch` if needed.
+8. Search promoted resources with `_search`.
 
 ```ts
 import { DataConvClient } from 'dataconv-client-sdk-ts';
@@ -31,13 +44,15 @@ const client = new DataConvClient({
   alternateName: 'clinic-demo',
   tenantId: 'VATES-B00000000',
   jurisdiction: 'ES',
+  sector: 'onehealth-research',
   crypto: globalThis.crypto
 });
 
 client.setIdToken('<id_token>');
 client.setVpToken('<vp_token>');
 
-const createResult = await client.createTenantConfig({
+// 1. Create the tenant/software configuration.
+const createResult = await client.createConfig({
   entries: [
     {
       softwareId: 'qvet-v1.0',
@@ -60,11 +75,13 @@ const createResult = await client.createTenantConfig({
   ]
 });
 
-const configResponse = await client.pollTenantConfigResponse({
+// 2. Wait until the configuration job completes.
+const configResponse = await client.pollConfig({
   thid: createResult.thid
 });
 
-const uploadResult = await client.uploadSpreadsheet(
+// 3. Upload the Excel or XLSX file for pre-conversion.
+const uploadResult = await client.uploadWithLink(
   'https://example.com/exampleQvetES.xlsx?dl=1',
   {
     softwareId: 'qvet-v1.0',
@@ -72,16 +89,38 @@ const uploadResult = await client.uploadSpreadsheet(
   }
 );
 
-const conversionResponse = await client.pollConversionResponse({
+// 4. Wait for the pre-conversion result.
+const conversionResponse = await client.pollUploadResponse({
   thid: uploadResult.thid,
   softwareId: 'qvet-v1.0'
 });
 
 const convertedBundle = client.getConvertedBundle(conversionResponse);
 const storedConfigs = client.getSuccessfulTenantConfigs(configResponse);
+
+// 5. Confirm promotion of the reviewed thread.
+const patchResponse = await client.patchConversion({
+  thid: uploadResult.thid,
+  softwareId: 'qvet-v1.0'
+});
+
+// 6. Publish aggregated resources in batch if your flow needs it.
+const publicationResponse = await client.batchPromotion({
+  thid: uploadResult.thid,
+  softwareId: 'qvet-v1.0'
+});
+
+// 7. Search promoted resources using lowercase FHIR parameters.
+const searchResponse = await client.searchResources({
+  resourceType: 'DocumentReference',
+  searchParams: {
+    userselected: 'false',
+    date: 'ge2026-01-01'
+  }
+});
 ```
 
-## Multipart
+## Multipart / local file upload
 
 ```ts
 await client.uploadSpreadsheetMultipart({
@@ -91,9 +130,9 @@ await client.uploadSpreadsheetMultipart({
 });
 ```
 
-## Inicializacion desde backend
+## Backend initialization
 
-Si el backend crea el SDK despues de `Organization/_activate`, puede inyectar `axios` o `fetch` igual que `ica-client-sdk-ts`.
+If the backend instantiates the SDK after `Organization/_activate`, it can inject `axios` or `fetch` just like `ica-client-sdk-ts`.
 
 ```ts
 import axios from 'axios';
@@ -115,7 +154,7 @@ const client = new DataConvClient({
 client.setVpToken(vpTokenFromActivation);
 ```
 
-Tambien funciona con `fetch`:
+It also works with `fetch`:
 
 ```ts
 const client = new DataConvClient({
@@ -128,11 +167,17 @@ const client = new DataConvClient({
 });
 ```
 
-## Notas
+## Notes
 
-- Para llamadas de configuración y conversión, el identificador operativo del tenant debería ser `tenantId` y puede ser el VAT/taxId de la organización. `alternateName` queda como compatibilidad o alias.
-- Las rutas de tenant configuration y conversion usan el sector fijo `onehealth-research`; la especialización funcional se controla por `softwareId`, no por `sector`.
-- El servicio de preconversión ya puede exigir presencia de `vp_token` y/o `id_token` según `PRECONV_AUTH_MODE`, aunque hoy no valida todavía la firma ni el intercambio completo de sesión en `adapter-ingestion-py`.
-- El backend actual todavía rechaza `source_format=csv`; el SDK lo modela porque la ruta existe, pero hoy el soporte real es Excel/XLSX.
-- `gdc-common-utils-ts` se consume desde npm; este SDK añade los tipos concretos de preconversión encima de esos helpers DIDComm.
-- Las VCs ICA y la `controller.publicKeyJwk` pertenecen al flujo de onboarding/`_activate` del backend. `DataConvClient` se instancia despues, cuando ya existe el tenant activado y solo hace falta invocar preconversion.
+- For configuration and conversion calls, the operational tenant identifier should be `tenantId`, typically the organization's VAT/taxId. `alternateName` remains as a compatibility alias.
+- `sector` is variable and is part of the public route for config, digital twin, and search.
+- `patchConversion()` defaults to `Composition/_patch`.
+- `batchPromotion()` defaults to `Patient/_batch`.
+- `searchResources()` resolves to `/host/cds-{jurisdiction}/v1/{sector}/{tenantId}/org.hl7.fhir.api/{resourceType}/_search`.
+- Parameter names sent by `searchResources()` are lowercase. Example: `userselected`, `date`.
+- Even if the caller passes `userSelected`, the SDK normalizes it to `userselected` before sending the body.
+- In `_search`, the current comparators are prefixed in the value: `ge2026-01-01`, `gt...`, `le...`, `lt...`.
+- The pre-conversion service can already require `vp_token` and/or `id_token` depending on `PRECONV_AUTH_MODE`, although it does not yet validate signatures or the full session exchange in `adapter-ingestion-py`.
+- The current backend still rejects `source_format=csv`; the SDK models it because the route exists, but real support today is Excel/XLSX.
+- `gdc-common-utils-ts` is consumed from npm; this SDK adds the concrete pre-conversion types on top of those DIDComm helpers.
+- ICA VCs and `controller.publicKeyJwk` belong to the backend onboarding/`_activate` flow. `DataConvClient` is instantiated afterwards, once the tenant is already activated and only pre-conversion calls are needed.

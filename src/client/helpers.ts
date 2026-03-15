@@ -108,3 +108,20 @@ export function headersToObject(headers: Headers): Record<string, string> {
 export function isFormData(body: unknown): body is FormData {
   return typeof FormData !== 'undefined' && body instanceof FormData;
 }
+
+export function normalizeSearchParams(searchParams: Record<string, unknown> | undefined): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+  if (!searchParams || typeof searchParams !== 'object') {
+    return normalized;
+  }
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    const normalizedKey = String(key || '').trim().toLowerCase();
+    if (!normalizedKey) {
+      continue;
+    }
+    normalized[normalizedKey] = value;
+  }
+
+  return normalized;
+}

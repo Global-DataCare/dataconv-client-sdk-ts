@@ -6,6 +6,7 @@ import {
   headerValue,
   headersToObject,
   isFormData,
+  normalizeSearchParams,
   normalizeSourceFormat,
   requireText,
   resolveConfigSoftwareId,
@@ -394,11 +395,11 @@ export class DataConvClient {
     const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
     const sector = resolveSector(this.config, options.sector);
     const softwareId = requireText(options.softwareId, 'softwareId');
-    const resourceType = resolveResourceType(this.config, options.resourceType);
+    const resourceType = requireText(options.resourceType || 'Composition', 'resourceType');
     const thid = requireText(options.thid, 'thid');
 
     const response = await this.request({
-      method: 'PATCH',
+      method: 'POST',
       url: `/${tenantId}/cds-${jurisdiction}/v1/${sector}/digitaltwin/${softwareId}/${resourceType}/_patch?thid=${encodeURIComponent(thid)}`,
       headers: { 'Content-Type': 'application/didcomm-plain+json' },
       body: buildEnvelope({
@@ -424,7 +425,7 @@ export class DataConvClient {
     const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
     const sector = resolveSector(this.config, options.sector);
     const softwareId = requireText(options.softwareId, 'softwareId');
-    const resourceType = resolveResourceType(this.config, options.resourceType);
+    const resourceType = requireText(options.resourceType || 'Patient', 'resourceType');
     const thid = requireText(options.thid, 'thid');
 
     const response = await this.request({
@@ -455,11 +456,12 @@ export class DataConvClient {
     const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
     const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
     const sector = resolveSector(this.config, options.sector);
-    const softwareId = requireText(options.softwareId, 'softwareId');
     const resourceType = requireText(options.resourceType, 'resourceType');
-    const searchParams = options.searchParams && typeof options.searchParams === 'object'
-      ? options.searchParams
-      : {};
+    const searchParams = normalizeSearchParams(
+      options.searchParams && typeof options.searchParams === 'object'
+        ? options.searchParams as Record<string, unknown>
+        : undefined
+    );
     const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
@@ -471,7 +473,7 @@ export class DataConvClient {
 
     const response = await this.request({
       method: 'POST',
-      url: `/${tenantId}/cds-${jurisdiction}/v1/${sector}/digitaltwin/${softwareId}/${resourceType}/_search`,
+      url: `/host/cds-${jurisdiction}/v1/${sector}/${tenantId}/org.hl7.fhir.api/${resourceType}/_search`,
       headers,
       body: searchParams
     });

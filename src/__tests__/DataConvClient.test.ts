@@ -410,7 +410,7 @@ describe('DataConvClient', () => {
     expect(response.body?.status).toBe('success');
     expect(response.body?.promotedCount).toBe(2);
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
-      method: 'PATCH',
+      method: 'POST',
       url: '/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/Composition/_patch?thid=up-1',
       headers: { 'Content-Type': 'application/didcomm-plain+json' },
       data: expect.objectContaining({
@@ -447,25 +447,59 @@ describe('DataConvClient', () => {
     });
 
     const response = await client.searchResources({
-      softwareId: 'qvet-v1.0',
       resourceType: 'DocumentReference',
       searchParams: {
-        userSelected: 'false',
-        date: 'ge2026-03-01'
+        userselected: 'false',
+        date: 'ge2026-01-01'
       }
     });
 
     expect(response.total).toBe(1);
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
-      url: '/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/DocumentReference/_search',
+      url: '/host/cds-ES/v1/onehealth-research/clinic-demo/org.hl7.fhir.api/DocumentReference/_search',
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer session-id-1'
       },
       data: {
+        userselected: 'false',
+        date: 'ge2026-01-01'
+      }
+    }));
+  });
+
+  it('normalizes FHIR search parameter names to lowercase before sending the request', async () => {
+    client.setIdToken('session-id-1');
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 0,
+        entry: []
+      }
+    });
+
+    await client.searchResources({
+      resourceType: 'DocumentReference',
+      searchParams: {
         userSelected: 'false',
-        date: 'ge2026-03-01'
+        date: 'ge2026-01-01'
+      }
+    });
+
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/host/cds-ES/v1/onehealth-research/clinic-demo/org.hl7.fhir.api/DocumentReference/_search',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer session-id-1'
+      },
+      data: {
+        userselected: 'false',
+        date: 'ge2026-01-01'
       }
     }));
   });
@@ -543,7 +577,6 @@ describe('DataConvClient', () => {
       softwareId: 'qvet-v1.0'
     });
     const searchResponse = await client.searchResources({
-      softwareId: 'qvet-v1.0',
       resourceType: 'Composition',
       searchParams: { 'relatesto-target': 'up-1' }
     });
