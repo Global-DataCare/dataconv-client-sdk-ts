@@ -41,7 +41,6 @@ import { DataConvClient } from 'dataconv-client-sdk-ts';
 
 const client = new DataConvClient({
   issuerDid: 'did:web:clinic.example:employee:...',
-  alternateName: 'clinic-demo',
   tenantId: 'VATES-B00000000',
   jurisdiction: 'ES',
   sector: 'onehealth-research',
@@ -144,7 +143,6 @@ const httpClient = axios.create({
 
 const client = new DataConvClient({
   issuerDid: activatedOrganizationDid,
-  alternateName: tenantAlternateName,
   tenantId: tenantAlternateName,
   jurisdiction: 'ES',
   httpClient,
@@ -159,7 +157,6 @@ It also works with `fetch`:
 ```ts
 const client = new DataConvClient({
   issuerDid: activatedOrganizationDid,
-  alternateName: tenantAlternateName,
   tenantId: tenantAlternateName,
   jurisdiction: 'ES',
   fetch,
@@ -169,7 +166,7 @@ const client = new DataConvClient({
 
 ## Notes
 
-- For configuration and conversion calls, the operational tenant identifier should be `tenantId`, typically the organization's VAT/taxId. `alternateName` remains as a compatibility alias.
+- For configuration and conversion calls, the operational tenant identifier should be `tenantId`, typically the organization's VAT/taxId.
 - `sector` is variable and is part of the public route for config, digital twin, and search.
 - `patchConversion()` defaults to `Composition/_patch`.
 - `batchPromotion()` defaults to `Patient/_batch`.
