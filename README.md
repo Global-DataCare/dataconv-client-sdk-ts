@@ -50,23 +50,35 @@ const client = new DataConvClient({
 client.setIdToken('<id_token>');
 client.setVpToken('<vp_token>');
 
-// 1. Create the tenant/software configuration.
+// 1. Discover frontend field descriptors from the API.
+const apiConfig = await client.getWellKnownApiConfig();
+
+// Example UI options:
+const fieldOptions = apiConfig.fields;
+// [
+//   { code: 'section', display: 'Departamento o sección: ...' },
+//   { code: 'family', display: 'Categoría de este registro...' },
+//   ...
+// ]
+
+// 2. Create the tenant/software configuration using the current API field keys.
 const createResult = await client.createConfig({
   entries: [
     {
-      softwareId: 'qvet-v1.0',
+      softwareId: 'api-config',
       config: {
         mappingConfig: {
-          headerRowIndex: 1,
+          headerRowIndex: 3,
           fieldMap: {
-            section: 'SECCION',
-            family: 'FAMILIA',
-            subfamily: 'SUBFAMILIA',
-            concept: 'CONCEPTO',
-            subjectId: 'HISTORIA_ID',
-            species: 'ESPECIE',
+            section: 'DEPARTAMENTO',
+            family: 'CATEGORIA',
+            subfamily: 'SUBCATEGORIA',
+            concept: 'DESCRIPCION',
+            subject_id: 'ID_INTERNO',
+            subject_animal-species: 'ESPECIE',
             date: 'FECHA',
-            time: 'HORA'
+            observation_weight: 'PESO',
+            coverage_insurer: 'ASEGURADORA'
           }
         }
       }
@@ -74,42 +86,43 @@ const createResult = await client.createConfig({
   ]
 });
 
-// 2. Wait until the configuration job completes.
+// 3. Wait until the configuration job completes.
 const configResponse = await client.pollConfig({
-  thid: createResult.thid
+  thid: createResult.thid,
+  softwareId: 'api-config'
 });
 
-// 3. Upload the Excel or XLSX file for pre-conversion.
+// 4. Upload the Excel or XLSX file for pre-conversion.
 const uploadResult = await client.uploadWithLink(
   'https://example.com/exampleQvetES.xlsx?dl=1',
   {
-    softwareId: 'qvet-v1.0',
+    softwareId: 'api-config',
     fileName: 'exampleQvetES.xlsx'
   }
 );
 
-// 4. Wait for the pre-conversion result.
+// 5. Wait for the pre-conversion result.
 const conversionResponse = await client.pollUploadResponse({
   thid: uploadResult.thid,
-  softwareId: 'qvet-v1.0'
+  softwareId: 'api-config'
 });
 
 const convertedBundle = client.getConvertedBundle(conversionResponse);
 const storedConfigs = client.getSuccessfulTenantConfigs(configResponse);
 
-// 5. Confirm promotion of the reviewed thread.
+// 6. Confirm promotion of the reviewed thread.
 const patchResponse = await client.patchConversion({
   thid: uploadResult.thid,
-  softwareId: 'qvet-v1.0'
+  softwareId: 'api-config'
 });
 
-// 6. Publish aggregated resources in batch if your flow needs it.
+// 7. Publish aggregated resources in batch if your flow needs it.
 const publicationResponse = await client.batchPromotion({
   thid: uploadResult.thid,
-  softwareId: 'qvet-v1.0'
+  softwareId: 'api-config'
 });
 
-// 7. Search promoted resources using lowercase FHIR parameters.
+// 8. Search promoted resources using lowercase FHIR parameters.
 const searchResponse = await client.searchResources({
   resourceType: 'DocumentReference',
   searchParams: {
@@ -152,6 +165,12 @@ The returned object includes:
 - `supportedFields` as raw `code -> display`
 - `fields` as `{ code, display }[]`
 - `endpoints` for `create`, `createResponse`, `upload`, and `uploadResponse`
+
+The recommended frontend flow is:
+
+1. Read `fields` from `/.well-known/api-config.json`.
+2. Let the user map spreadsheet columns to those field codes.
+3. Submit `mappingConfig.fieldMap` using those same codes.
 
 ## Backend initialization
 
