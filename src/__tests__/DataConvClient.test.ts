@@ -145,6 +145,20 @@ describe('DataConvClient', () => {
     ]);
   });
 
+  it('tracks selected fields and avoids duplicates', () => {
+    expect(client.getSelectedFieldCodes()).toEqual([]);
+    expect(client.selectField('section')).toBe(true);
+    expect(client.selectField('coverage_insurer')).toBe(true);
+    expect(client.selectField('section')).toBe(false);
+    expect(client.getSelectedFieldCodes().sort()).toEqual(['coverage_insurer', 'section']);
+    expect(client.isFieldSelected('section')).toBe(true);
+    expect(client.isFieldSelected('unknown')).toBe(false);
+    expect(client.unselectField('section')).toBe(true);
+    expect(client.isFieldSelected('section')).toBe(false);
+    client.clearSelectedFields();
+    expect(client.getSelectedFieldCodes()).toEqual([]);
+  });
+
   it('prefers tenantId over alternateName for tenant config endpoints', async () => {
     const vatClient = new DataConvClient({
       issuerDid: 'did:web:clinic.example:employee:it:loader',
@@ -303,10 +317,32 @@ describe('DataConvClient', () => {
         resourceType: 'Bundle',
         type: 'batch-response',
         total: 1,
+        issues: {
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'information',
+              code: 'informational',
+              diagnostics: 'Job status: succeeded. Se han procesado 500 registros.'
+            }
+          ]
+        },
         data: [
           {
             type: 'ConversionResult',
-            response: { status: '200' },
+            response: {
+              status: '200',
+              outcome: {
+                resourceType: 'OperationOutcome',
+                issue: [
+                  {
+                    severity: 'information',
+                    code: 'informational',
+                    diagnostics: 'Job status: succeeded. Se han procesado 500 registros.'
+                  }
+                ]
+              }
+            },
             resource: {
               resourceType: 'Bundle',
               type: 'batch',
@@ -331,6 +367,44 @@ describe('DataConvClient', () => {
     expect(client.getLastConversionResponse()).toEqual(payload);
     expect(client.getConversionEntry()?.response?.status).toBe('200');
     expect(client.getConvertedBundle()).toEqual(payload.body?.data?.[0]?.resource);
+    expect(client.getMainDiagnosticInfoByResponse(response)).toBe(
+      'Job status: succeeded. Se han procesado 500 registros.'
+    );
+    expect(client.getMainDiagnosticInfo()).toBe(
+      'Job status: succeeded. Se han procesado 500 registros.'
+    );
+  });
+
+  it('falls back to entry outcome diagnostics when bundle issues are absent', () => {
+    const payload: DataConvDidCommResponse<ConvertedBundleResource> = {
+      body: {
+        resourceType: 'Bundle',
+        type: 'batch-response',
+        total: 1,
+        data: [
+          {
+            type: 'ConversionResult',
+            response: {
+              status: '500',
+              outcome: {
+                resourceType: 'OperationOutcome',
+                issue: [
+                  {
+                    severity: 'error',
+                    code: 'exception',
+                    diagnostics: 'Job status: failed. Missing LOINC mapping.'
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    };
+
+    expect(client.getMainDiagnosticInfoByResponse(payload)).toBe(
+      'Job status: failed. Missing LOINC mapping.'
+    );
   });
 
   it('uses injected crypto for generated thread ids', async () => {

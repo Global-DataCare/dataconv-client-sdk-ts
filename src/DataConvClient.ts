@@ -58,6 +58,7 @@ export class DataConvClient {
   private vpToken?: string;
   private lastTenantConfigResponse?: DataConvDidCommResponse<TenantAdapterConfigResource>;
   private lastConversionResponse?: DataConvDidCommResponse<ConvertedBundleResource>;
+  private selectedFieldCodes: Set<string> = new Set();
 
   constructor(private readonly config: DataConvClientConfig) {
     this.baseUrl = config.baseUrl || process.env.DATACONV_BASE_URL || 'http://localhost:8080';
@@ -128,6 +129,66 @@ export class DataConvClient {
     response: DataConvDidCommResponse<TResource> | undefined
   ): DataConvOperationOutcome | undefined {
     return response?.body?.issues;
+  }
+
+  getMainDiagnosticInfoByResponse<TResource>(
+    response: DataConvDidCommResponse<TResource> | undefined
+  ): string | undefined {
+    const bodyDiagnostic = response?.body?.issues?.issue?.find(
+      (issue) => typeof issue?.diagnostics === 'string' && issue.diagnostics.trim()
+    )?.diagnostics;
+    if (typeof bodyDiagnostic === 'string' && bodyDiagnostic.trim()) {
+      return bodyDiagnostic.trim();
+    }
+
+    const entryDiagnostic = response?.body?.data?.find(
+      (entry) =>
+        Array.isArray(entry?.response?.outcome?.issue) &&
+        entry.response.outcome.issue.some(
+          (issue) => typeof issue?.diagnostics === 'string' && issue.diagnostics.trim()
+        )
+    )?.response?.outcome?.issue?.find(
+      (issue) => typeof issue?.diagnostics === 'string' && issue.diagnostics.trim()
+    )?.diagnostics;
+
+    if (typeof entryDiagnostic === 'string' && entryDiagnostic.trim()) {
+      return entryDiagnostic.trim();
+    }
+
+    return undefined;
+  }
+
+  getSelectedFieldCodes(): string[] {
+    return Array.from(this.selectedFieldCodes);
+  }
+
+  isFieldSelected(code: string): boolean {
+    return this.selectedFieldCodes.has(String(code || '').trim());
+  }
+
+  selectField(code: string): boolean {
+    const normalized = String(code || '').trim();
+    if (!normalized) {
+      throw new Error('Field code is required for selectField');
+    }
+    if (this.selectedFieldCodes.has(normalized)) {
+      return false;
+    }
+    this.selectedFieldCodes.add(normalized);
+    return true;
+  }
+
+  unselectField(code: string): boolean {
+    const normalized = String(code || '').trim();
+    return this.selectedFieldCodes.delete(normalized);
+  }
+
+  clearSelectedFields(): void {
+    this.selectedFieldCodes.clear();
+  }
+
+  getMainDiagnosticInfo(): string | undefined {
+    return this.getMainDiagnosticInfoByResponse(this.lastConversionResponse ?? this.lastTenantConfigResponse);
   }
 
   async getWellKnownApiConfig(): Promise<DataConvWellKnownApiConfig> {

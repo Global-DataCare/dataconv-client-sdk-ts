@@ -108,7 +108,10 @@ const conversionResponse = await client.pollUploadResponse({
 });
 
 const convertedBundle = client.getConvertedBundle(conversionResponse);
+const mainDiagnostic = client.getMainDiagnosticInfoByResponse(conversionResponse);
 const storedConfigs = client.getSuccessfulTenantConfigs(configResponse);
+
+console.log(mainDiagnostic);
 
 // 6. Confirm promotion of the reviewed thread.
 const patchResponse = await client.patchConversion({
@@ -142,6 +145,46 @@ await client.uploadSpreadsheetMultipart({
 });
 ```
 
+## CLI evidence for real upload + polling
+
+The package also exposes a CLI that performs a real upload call, waits for `_upload-response`, saves the full DIDComm response to JSON, and prints the main diagnostic summary.
+
+```bash
+dataconv-client \
+  --service-did did:web:dataconv-api.example.org \
+  --resolved-base-url http://127.0.0.1:8080 \
+  --tenant-id demo-tenant \
+  --software-id api-config \
+  --resource-type Composition \
+  --file ./examples/example-api-config.xlsx \
+  --issuer-did did:web:organization.example.org:employee:loader \
+  --authorization-bearer <token> \
+  --output-json ./artifacts/appmypets-upload-response.json
+```
+
+The CLI prints:
+
+- the exact public upload URL used
+- the Excel path and size in KB
+- the `Location` header returned by `_upload`
+- the `thid`
+- the exact polling URL used
+- the output JSON file path
+- the main diagnostic text from the final DIDComm response
+
+This is useful when you need a reproducible console trace for a justification dossier without pasting the whole JSON response into the report.
+
+When `--service-did` is used, the CLI can resolve it locally by either:
+
+- passing `--resolved-base-url <url>`
+- or defining `DATACONV_SERVICE_DID_MAP` as a JSON object, for example:
+
+```bash
+export DATACONV_SERVICE_DID_MAP='{"did:web:dataconv-api.example.org":"http://127.0.0.1:8080"}'
+```
+
+This keeps public examples neutral while still allowing local or temporary endpoint resolution outside the repository.
+
 ## Discover form fields from `/.well-known/api-config.json`
 
 The client can read the API discovery document published by the server and return frontend-ready field descriptors.
@@ -157,6 +200,26 @@ console.log(apiConfig.fields);
 // ]
 
 const supportedFields = await client.getSupportedFields();
+
+// Optional: track selection state for UI dropdown dedup checks.
+if (!client.selectField('section')) {
+  alert('Campo "section" ya seleccionado en otro dropdown');
+}
+if (!client.selectField('section')) {
+  alert('No puedes seleccionar el mismo campo dos veces');
+}
+
+const uploadResponse = await client.uploadSpreadsheetAndWait(
+  'https://example.com/AppMyPets-api-config.xlsx?dl=1',
+  {
+    softwareId: 'api-config',
+    resourceType: 'Composition',
+    fileName: 'AppMyPets-api-config.xlsx'
+  }
+);
+
+const summaryText = client.getMainDiagnosticInfoByResponse(uploadResponse);
+console.log(summaryText);
 ```
 
 The returned object includes:
@@ -166,11 +229,100 @@ The returned object includes:
 - `fields` as `{ code, display }[]`
 - `endpoints` for `create`, `createResponse`, `upload`, and `uploadResponse`
 
+For DIDComm polling responses, the SDK also exposes:
+
+- `getMainDiagnosticInfoByResponse(response)` to read the main `OperationOutcome.issue[0].diagnostics`
+- `getMainDiagnosticInfo()` to read it from the last stored config/conversion response
+
 The recommended frontend flow is:
 
 1. Read `fields` from `/.well-known/api-config.json`.
 2. Let the user map spreadsheet columns to those field codes.
 3. Submit `mappingConfig.fieldMap` using those same codes.
+
+### React example: avoid duplicate field selection across dropdowns
+
+```tsx
+import { useEffect, useMemo, useState } from 'react';
+import { DataConvClient } from 'dataconv-client-sdk-ts';
+
+const client = new DataConvClient({
+  issuerDid: 'did:web:clinic.example:employee:loader',
+  tenantId: 'VATES-B00000000',
+  jurisdiction: 'ES',
+  crypto: globalThis.crypto
+});
+
+type FieldOption = { code: string; display: string };
+
+export function FieldMappingForm() {
+  const [options, setOptions] = useState<FieldOption[]>([]);
+  const [mapping, setMapping] = useState<Record<string, string>>({
+    colA: '',
+    colB: '',
+    colC: ''
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    client.getSupportedFields().then((fields) => {
+      if (mounted) setOptions(fields);
+    });
+    return () => {
+      mounted = false;
+      client.clearSelectedFields();
+    };
+  }, []);
+
+  const selectedSet = useMemo(() => new Set(client.getSelectedFieldCodes()), [mapping]);
+
+  const onChangeField = (columnKey: string, newCode: string) => {
+    const previousCode = mapping[columnKey];
+    if (previousCode) {
+      client.unselectField(previousCode);
+    }
+
+    if (newCode && !client.selectField(newCode)) {
+      if (previousCode) {
+        client.selectField(previousCode);
+      }
+      alert(`El campo ${newCode} ya ha sido seleccionado anteriormente.`);
+      return;
+    }
+
+    setMapping((current) => ({ ...current, [columnKey]: newCode }));
+  };
+
+  return (
+    <>
+      {Object.keys(mapping).map((columnKey) => (
+        <select
+          key={columnKey}
+          value={mapping[columnKey]}
+          onChange={(event) => onChangeField(columnKey, event.target.value)}
+        >
+          <option value="">Selecciona un campo</option>
+          {options.map((field) => {
+            const selectedInAnotherDropdown =
+              selectedSet.has(field.code) && mapping[columnKey] !== field.code;
+            return (
+              <option key={field.code} value={field.code} disabled={selectedInAnotherDropdown}>
+                {field.display}
+              </option>
+            );
+          })}
+        </select>
+      ))}
+    </>
+  );
+}
+```
+
+In this pattern:
+
+- `selectField(code)` returns `false` when the code was already used.
+- `unselectField(code)` frees a code when a dropdown changes value.
+- `getSelectedFieldCodes()` helps disable options already selected elsewhere.
 
 ## Backend initialization
 
