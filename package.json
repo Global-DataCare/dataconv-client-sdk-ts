@@ -1,6 +1,6 @@
 {
   "name": "dataconv-client-sdk-ts",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "TypeScript SDK for adapter-ingestion-py preconversion APIs via DIDComm and multipart upload.",
   "type": "module",
   "main": "dist/index.js",
@@ -38,7 +38,8 @@
     "eslint": "^8.0.0",
     "jest": "^29.0.0",
     "ts-jest": "^29.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "xlsx": "^0.18.5"
   },
   "dependencies": {
     "axios": "^1.0.0",

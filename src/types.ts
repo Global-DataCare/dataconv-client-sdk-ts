@@ -57,23 +57,31 @@ export interface DataConvCrypto {
   getRandomValues?: (array: Uint8Array) => Uint8Array;
 }
 
-export interface TenantAdapterConfigContent {
-  mappingConfig?: Record<string, unknown>;
+import type { FieldsGenericCare } from './field-maps.js';
+
+export interface DataConvMappingConfig<TFieldMap = FieldsGenericCare> {
+  headerRowIndex?: number;
+  fieldMap?: TFieldMap;
+  [key: string]: unknown;
+}
+
+export interface TenantAdapterConfigContent<TFieldMap = FieldsGenericCare> {
+  mappingConfig?: DataConvMappingConfig<TFieldMap>;
   speciesFhir?: Record<string, unknown>;
   speciesLocalToFhirCode?: Record<string, string>;
   runtimeDefaults?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
-export interface CreateTenantConfigEntry {
+export interface CreateTenantConfigEntry<TFieldMap = FieldsGenericCare> {
   softwareId: string;
   softwareVersion?: string;
   updatedBy?: string;
-  config?: TenantAdapterConfigContent;
+  config?: TenantAdapterConfigContent<TFieldMap>;
   [key: string]: unknown;
 }
 
-export interface TenantAdapterConfigResource {
+export interface TenantAdapterConfigResource<TFieldMap = FieldsGenericCare> {
   id?: string;
   type?: string;
   tenantId?: string;
@@ -85,7 +93,7 @@ export interface TenantAdapterConfigResource {
   createdAt?: string;
   updatedAt?: string;
   audit?: Record<string, unknown>;
-  content?: TenantAdapterConfigContent;
+  content?: TenantAdapterConfigContent<TFieldMap>;
   [key: string]: unknown;
 }
 
@@ -152,7 +160,7 @@ export interface DataConvClientConfig {
   crypto?: DataConvCrypto;
 }
 
-export interface CreateTenantConfigOptions {
+export interface CreateTenantConfigOptions<TFieldMap = FieldsGenericCare> {
   alternateName?: string;
   tenantId?: string;
   jurisdiction?: string;
@@ -165,7 +173,7 @@ export interface CreateTenantConfigOptions {
   exp?: number;
   idToken?: string;
   vpToken?: string;
-  entries: CreateTenantConfigEntry[];
+  entries: CreateTenantConfigEntry<TFieldMap>[];
 }
 
 export interface DataConvTenantConfigPollOptions {
@@ -299,4 +307,16 @@ export interface DataConvCreateResult {
 export interface DataConvUploadResult {
   thid: string;
   location?: string;
+}
+
+export interface DataConvSupportedField {
+  code: string;
+  display: string;
+}
+
+export interface DataConvWellKnownApiConfig {
+  language: string;
+  supportedFields: Record<string, string>;
+  endpoints: Record<string, string>;
+  fields: DataConvSupportedField[];
 }

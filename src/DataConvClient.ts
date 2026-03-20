@@ -38,6 +38,8 @@ import type {
   DataConvTenantConfigPollOptions,
   DataConvUploadDidCommOptions,
   DataConvUploadResult,
+  DataConvSupportedField,
+  DataConvWellKnownApiConfig,
   SourceFormat,
   TenantAdapterConfigEntry,
   TenantAdapterConfigResource
@@ -126,6 +128,53 @@ export class DataConvClient {
     response: DataConvDidCommResponse<TResource> | undefined
   ): DataConvOperationOutcome | undefined {
     return response?.body?.issues;
+  }
+
+  async getWellKnownApiConfig(): Promise<DataConvWellKnownApiConfig> {
+    const response = await this.request({
+      method: 'GET',
+      url: '/.well-known/api-config.json'
+    });
+
+    if (response.status !== 200 || !response.data || typeof response.data !== 'object') {
+      throw new Error(`Unexpected api-config response status: ${response.status}`);
+    }
+
+    const raw = response.data as Record<string, unknown>;
+    const supportedFields = Object.fromEntries(
+      Object.entries(
+        raw.supportedFields && typeof raw.supportedFields === 'object'
+          ? raw.supportedFields as Record<string, unknown>
+          : {}
+      )
+        .filter(([key, value]) => String(key || '').trim() && String(value || '').trim())
+        .map(([key, value]) => [String(key).trim(), String(value).trim()])
+    );
+    const endpoints = Object.fromEntries(
+      Object.entries(
+        raw.endpoints && typeof raw.endpoints === 'object'
+          ? raw.endpoints as Record<string, unknown>
+          : {}
+      )
+        .filter(([key, value]) => String(key || '').trim() && String(value || '').trim())
+        .map(([key, value]) => [String(key).trim(), String(value).trim()])
+    );
+    const fields: DataConvSupportedField[] = Object.entries(supportedFields).map(([code, display]) => ({
+      code,
+      display
+    }));
+
+    return {
+      language: String(raw.language || '').trim(),
+      supportedFields,
+      endpoints,
+      fields
+    };
+  }
+
+  async getSupportedFields(): Promise<DataConvSupportedField[]> {
+    const config = await this.getWellKnownApiConfig();
+    return config.fields;
   }
 
   async createTenantConfig(options: CreateTenantConfigOptions): Promise<DataConvCreateResult> {

@@ -22,14 +22,35 @@ export type {
   DataConvSearchBundle,
   DataConvSearchBundleEntry,
   DataConvSearchOptions,
+  DataConvSupportedField,
   DataConvTenantConfigPollOptions,
   DataConvUploadDidCommOptions,
   DataConvUploadResult,
+  DataConvWellKnownApiConfig,
   SourceFormat,
   TenantAdapterConfigContent,
   TenantAdapterConfigEntry,
-  TenantAdapterConfigResource
+  TenantAdapterConfigResource,
+  DataConvMappingConfig
 } from './types.js';
+export {
+  SubjectFieldKeys,
+  ProductFieldKeys,
+  InvoiceFieldKeys,
+  DocumentReferenceFieldKeys,
+  DataLocalFieldKeys,
+} from './field-maps.js';
+export type {
+  SubjectFieldKey,
+  ProductFieldKey,
+  InvoiceFieldKey,
+  DocumentReferenceFieldKey,
+  DataLocalFieldKey,
+  DataConvFieldMapBase,
+  FieldsGenericCare,
+  FieldsHealthCare,
+  FieldsAnimalCare
+} from './field-maps.js';
 export {
   prepareDidCommRequest,
   includeVpTokenInMessage,
@@ -37,3 +58,36 @@ export {
   getThidFromMessage,
   getDataResults
 } from 'gdc-common-utils-ts/utils/didcomm';
+export {
+  getExcelTemplateData,
+  generateTemplateExcel
+} from './client/excel-generator.js';
+
+export { DataLocalSearchClaims } from './claims.js';
+export type { DataLocalSearchClaim } from './claims.js';
+
+export {
+  GlobalSearchClaims,
+  PersonalSearchClaims,
+  SubjectSearchClaims,
+  AppointmentSearchClaims,
+  EncounterSearchClaims,
+  ChargeitemSearchClaims,
+  CoverageSearchClaims,
+  LocationSearchClaims,
+  ObservationSearchClaims,
+  ProcedureSearchClaims,
+} from './claims.js';
+
+export type {
+  GlobalSearchClaim,
+  PersonalSearchClaim,
+  SubjectSearchClaim,
+  AppointmentSearchClaim,
+  EncounterSearchClaim,
+  ChargeitemSearchClaim,
+  CoverageSearchClaim,
+  LocationSearchClaim,
+  ObservationSearchClaim,
+  ProcedureSearchClaim,
+} from './claims.js';

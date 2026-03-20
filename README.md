@@ -129,6 +129,30 @@ await client.uploadSpreadsheetMultipart({
 });
 ```
 
+## Discover form fields from `/.well-known/api-config.json`
+
+The client can read the API discovery document published by the server and return frontend-ready field descriptors.
+
+```ts
+const apiConfig = await client.getWellKnownApiConfig();
+
+console.log(apiConfig.language); // "es"
+console.log(apiConfig.fields);
+// [
+//   { code: 'section', display: 'Departamento o sección: ...' },
+//   { code: 'coverage_insurer', display: 'Identificador o nombre de la aseguradora' }
+// ]
+
+const supportedFields = await client.getSupportedFields();
+```
+
+The returned object includes:
+
+- `language`
+- `supportedFields` as raw `code -> display`
+- `fields` as `{ code, display }[]`
+- `endpoints` for `create`, `createResponse`, `upload`, and `uploadResponse`
+
 ## Backend initialization
 
 If the backend instantiates the SDK after `Organization/_activate`, it can inject `axios` or `fetch` just like `ica-client-sdk-ts`.

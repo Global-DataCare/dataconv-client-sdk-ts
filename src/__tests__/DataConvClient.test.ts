@@ -95,6 +95,56 @@ describe('DataConvClient', () => {
     }));
   });
 
+  it('fetches the well-known api-config document and normalizes frontend fields', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        language: 'es',
+        supportedFields: {
+          section: 'Departamento o sección',
+          coverage_insurer: 'Identificador o nombre de la aseguradora'
+        },
+        endpoints: {
+          upload: '/host/.../_upload'
+        }
+      }
+    });
+
+    const result = await client.getWellKnownApiConfig();
+
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'GET',
+      url: '/.well-known/api-config.json'
+    }));
+    expect(result.language).toBe('es');
+    expect(result.fields).toEqual([
+      { code: 'section', display: 'Departamento o sección' },
+      { code: 'coverage_insurer', display: 'Identificador o nombre de la aseguradora' }
+    ]);
+    expect(result.endpoints.upload).toBe('/host/.../_upload');
+  });
+
+  it('returns supported fields as code/display pairs', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        language: 'es',
+        supportedFields: {
+          'procedure_code-display': 'Código de procedimiento realizado'
+        },
+        endpoints: {}
+      }
+    });
+
+    const result = await client.getSupportedFields();
+
+    expect(result).toEqual([
+      { code: 'procedure_code-display', display: 'Código de procedimiento realizado' }
+    ]);
+  });
+
   it('prefers tenantId over alternateName for tenant config endpoints', async () => {
     const vatClient = new DataConvClient({
       issuerDid: 'did:web:clinic.example:employee:it:loader',
