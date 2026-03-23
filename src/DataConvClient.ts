@@ -31,6 +31,8 @@ import type {
   DataConvDidCommResponse,
   DataConvApiKeyCreateActionsOptions,
   DataConvApiKeyCreateActionsResult,
+  DataConvApiKeyLifecycleOptions,
+  DataConvApiKeyLifecycleResult,
   DataConvExchangeTokenOptions,
   DataConvExchangeTokenResult,
   DataConvMultipartUploadOptions,
@@ -133,6 +135,21 @@ export class DataConvClient {
   }
 
   async createTenantApiKeyActions(options: DataConvApiKeyCreateActionsOptions): Promise<DataConvApiKeyCreateActionsResult> {
+    return this.updateTenantApiKeyActions('/_create', options);
+  }
+
+  async disableTenantApiKeyActions(options: DataConvApiKeyLifecycleOptions): Promise<DataConvApiKeyLifecycleResult> {
+    return this.updateTenantApiKeyActions('/_disable', options);
+  }
+
+  async removeTenantApiKeyActions(options: DataConvApiKeyLifecycleOptions): Promise<DataConvApiKeyLifecycleResult> {
+    return this.updateTenantApiKeyActions('/_remove', options);
+  }
+
+  private async updateTenantApiKeyActions(
+    actionPath: '/_create' | '/_disable' | '/_remove',
+    options: DataConvApiKeyCreateActionsOptions
+  ): Promise<DataConvApiKeyCreateActionsResult> {
     const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
     const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
     const sector = resolveSector(this.config, options.sector);
@@ -143,18 +160,18 @@ export class DataConvClient {
 
     const response = await this.request({
       method: 'POST',
-      url: `/${tenantId}/cds-${jurisdiction}/v1/${sector}/api-key/org.schema/action/_create`,
+      url: `/${tenantId}/cds-${jurisdiction}/v1/${sector}/api-key/org.schema/action${actionPath}`,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${authorizationToken}`
       },
       body: {
-        data: options.actions
+        data: options.actions.map((resource) => ({ resource }))
       }
     });
 
     if (response.status !== 200) {
-      throw new Error(`Unexpected createTenantApiKeyActions response status: ${response.status}`);
+      throw new Error(`Unexpected updateTenantApiKeyActions response status: ${response.status}`);
     }
     return response.data as DataConvApiKeyCreateActionsResult;
   }
@@ -647,7 +664,10 @@ export class DataConvClient {
     const response = await this.request({
       method: 'POST',
       url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/${softwareId}/${resourceType}/_patch?thid=${encodeURIComponent(thid)}`,
-      headers: { 'Content-Type': 'application/didcomm-plain+json' },
+      headers: {
+        'Content-Type': 'application/didcomm-plain+json',
+        ...(options.authorizationToken ? { Authorization: `Bearer ${options.authorizationToken}` } : {})
+      },
       body: buildEnvelope({
         iss: options.iss,
         thid,
@@ -677,7 +697,10 @@ export class DataConvClient {
     const response = await this.request({
       method: 'POST',
       url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/${softwareId}/${resourceType}/_batch?thid=${encodeURIComponent(thid)}`,
-      headers: { 'Content-Type': 'application/didcomm-plain+json' },
+      headers: {
+        'Content-Type': 'application/didcomm-plain+json',
+        ...(options.authorizationToken ? { Authorization: `Bearer ${options.authorizationToken}` } : {})
+      },
       body: buildEnvelope({
         iss: options.iss,
         thid,

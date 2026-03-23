@@ -1,12 +1,13 @@
 {
   "name": "dataconv-client-sdk-ts",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "TypeScript SDK for adapter-ingestion-py preconversion APIs via DIDComm and multipart upload.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "dataconv-client": "dist/cli.js"
+    "dataconv-client": "dist/cli.js",
+    "dataconv": "dist/cli.js"
   },
   "files": [
     "dist",

@@ -5,6 +5,7 @@ export type SourceFormat = 'excel' | 'xlsx' | 'csv';
 export interface DataConvOperationOutcomeIssue {
   severity?: string;
   code?: string;
+  description?: string;
   diagnostics?: string;
   [key: string]: unknown;
 }
@@ -207,6 +208,7 @@ export interface DataConvUploadBaseOptions {
   exp?: number;
   idToken?: string;
   vpToken?: string;
+  authorizationToken?: string;
   mode?: string;
   send?: boolean;
   inlineConfig?: Record<string, unknown>;
@@ -239,7 +241,91 @@ export interface DataConvConversionPollOptions {
   exp?: number;
   idToken?: string;
   vpToken?: string;
+  authorizationToken?: string;
 }
+
+export interface DataConvExchangeTokenOptions {
+  subjectToken: string;
+  subjectTokenType?: string;
+  vpToken: string;
+  clientAssertion: string;
+  clientAssertionType?: string;
+  scope?: string;
+  apiKey?: string;
+  organization?: string;
+  operationalSubject?: string;
+  endpointPath?: '/exchange' | '/oauth/token';
+}
+
+export interface DataConvExchangeTokenResult {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  scope?: string;
+  subject?: string;
+  organization?: string;
+  [key: string]: unknown;
+}
+
+export interface DataConvApiKeyActionAgent {
+  email?: string;
+  sameAs?: string;
+  [key: string]: unknown;
+}
+
+export interface DataConvApiKeyAction {
+  '@context'?: string;
+  '@type'?: string;
+  identifier?: string;
+  actionStatus?: string;
+  target?: string;
+  scope?: string | string[];
+  agent?: DataConvApiKeyActionAgent;
+  instrument?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface DataConvApiKeyActionEntry {
+  resource: DataConvApiKeyAction;
+}
+
+export interface DataConvApiKeyResource extends Record<string, unknown> {
+  '@context'?: string;
+  '@type'?: string;
+  identifier?: string;
+  actionStatus?: string;
+  target?: string;
+  scope?: string[];
+  agent?: DataConvApiKeyActionAgent;
+  instrument?: Record<string, unknown>;
+  apiKey?: string;
+  tenantId?: string;
+  expiresAt?: string;
+  removed?: boolean;
+}
+
+export interface DataConvApiKeyResponseEntry {
+  resource?: DataConvApiKeyResource;
+  [key: string]: unknown;
+}
+
+export interface DataConvApiKeyCreateActionsOptions {
+  tenantId?: string;
+  alternateName?: string;
+  jurisdiction?: string;
+  sector?: string;
+  authorizationToken: string;
+  actions: DataConvApiKeyAction[];
+}
+
+export interface DataConvApiKeyLifecycleOptions extends DataConvApiKeyCreateActionsOptions {}
+
+export interface DataConvApiKeyCreateActionsResult {
+  data?: DataConvApiKeyResponseEntry[];
+  [key: string]: unknown;
+}
+
+export interface DataConvApiKeyLifecycleResult extends DataConvApiKeyCreateActionsResult {}
 
 export interface DataConvPatchOptions {
   alternateName?: string;
@@ -255,6 +341,7 @@ export interface DataConvPatchOptions {
   exp?: number;
   idToken?: string;
   vpToken?: string;
+  authorizationToken?: string;
 }
 
 export interface DataConvPatchResponseBody {
@@ -318,5 +405,8 @@ export interface DataConvWellKnownApiConfig {
   language: string;
   supportedFields: Record<string, string>;
   endpoints: Record<string, string>;
+  allowedJurisdictions?: string[];
+  allowedSectors?: string[];
+  auth?: Record<string, unknown>;
   fields: DataConvSupportedField[];
 }

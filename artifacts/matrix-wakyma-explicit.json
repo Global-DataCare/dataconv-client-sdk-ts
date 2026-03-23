@@ -1,0 +1,48 @@
+{
+  "jti": "66ab1783-73ee-4c32-9947-11167c7099a2",
+  "thid": "c0ff8854-8538-442d-a554-9873edcf1aa9",
+  "type": "https://didcomm.org/plaintext/2.0/message",
+  "iss": "did:web:globaldatacare.es:employee:preconversion",
+  "aud": "did:web:globaldatacare.es",
+  "iat": 1774141472,
+  "exp": 1774141772,
+  "body": {
+    "resourceType": "Bundle",
+    "type": "batch-response",
+    "issues": {
+      "resourceType": "OperationOutcome",
+      "issue": [
+        {
+          "severity": "information",
+          "code": "informational",
+          "diagnostics": "Job status: succeeded. Se han generado 0 Encounter. La operación fue procesada en 0 segundos.. Dropped 662 record(s) due to missing subject_id values or an incorrect schemaConfig.fieldMap.subject_id mapping."
+        }
+      ]
+    },
+    "data": [
+      {
+        "type": "ConversionResult",
+        "response": {
+          "status": "200",
+          "outcome": {
+            "resourceType": "OperationOutcome",
+            "issue": [
+              {
+                "severity": "information",
+                "code": "informational",
+                "diagnostics": "Job status: succeeded. Se han generado 0 Encounter. La operación fue procesada en 0 segundos.. Dropped 662 record(s) due to missing subject_id values or an incorrect schemaConfig.fieldMap.subject_id mapping."
+              }
+            ]
+          }
+        },
+        "resource": {
+          "resourceType": "Bundle",
+          "type": "batch",
+          "data": [],
+          "total": 0
+        }
+      }
+    ],
+    "total": 1
+  }
+}

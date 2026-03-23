@@ -1,0 +1,42 @@
+{
+  "jti": "efee7c20-4630-4b3c-94d7-e2e5197df7a6",
+  "thid": "88c618b9-859c-4359-a80d-e9ac93a19c29",
+  "type": "https://didcomm.org/plaintext/2.0/message",
+  "iss": "did:web:globaldatacare.es:employee:preconversion",
+  "aud": "did:web:globaldatacare.es:employee:loader",
+  "iat": 1774141481,
+  "exp": 1774141781,
+  "body": {
+    "resourceType": "Bundle",
+    "type": "batch-response",
+    "issues": {
+      "resourceType": "OperationOutcome",
+      "issue": [
+        {
+          "severity": "error",
+          "code": "exception",
+          "diagnostics": "Job status: failed. Unknown manufacturer adapter 'appmypets'. Supported: api-config, qvet, wakyma"
+        }
+      ]
+    },
+    "data": [
+      {
+        "type": "ConversionResult",
+        "response": {
+          "status": "500",
+          "outcome": {
+            "resourceType": "OperationOutcome",
+            "issue": [
+              {
+                "severity": "error",
+                "code": "exception",
+                "diagnostics": "Job status: failed. Unknown manufacturer adapter 'appmypets'. Supported: api-config, qvet, wakyma"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "total": 1
+  }
+}

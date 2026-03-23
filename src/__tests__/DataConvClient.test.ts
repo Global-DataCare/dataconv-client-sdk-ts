@@ -791,10 +791,12 @@ describe('DataConvClient', () => {
       data: {
         data: [
           {
-            identifier: 'api-key-uuid-1',
-            actionStatus: 'active',
-            agent: { sameAs: 'zMockedSameAsHash' },
-            apiKey: 'dck_abc'
+            resource: {
+              identifier: 'api-key-uuid-1',
+              actionStatus: 'active',
+              agent: { sameAs: 'zMockedSameAsHash' },
+              apiKey: 'dck_abc'
+            }
           }
         ]
       }
@@ -817,7 +819,7 @@ describe('DataConvClient', () => {
       ]
     });
 
-    expect(result.data?.[0]?.identifier).toBe('api-key-uuid-1');
+    expect(result.data?.[0]?.resource?.identifier).toBe('api-key-uuid-1');
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
       url: '/VATES-A00000001/cds-ES/v1/animal-care/api-key/org.schema/action/_create',
@@ -828,8 +830,10 @@ describe('DataConvClient', () => {
       data: expect.objectContaining({
         data: [
           expect.objectContaining({
-            '@type': 'UpdateAction',
-            target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_update'
+            resource: expect.objectContaining({
+              '@type': 'UpdateAction',
+              target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_update'
+            })
           })
         ]
       })
