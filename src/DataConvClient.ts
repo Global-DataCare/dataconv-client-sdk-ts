@@ -31,6 +31,7 @@ import type {
   DataConvDidCommResponse,
   DataConvApiKeyCreateActionsOptions,
   DataConvApiKeyCreateActionsResult,
+  DataConvApiKeyAuthorizationRule,
   DataConvApiKeyLifecycleOptions,
   DataConvApiKeyLifecycleResult,
   DataConvExchangeTokenOptions,
@@ -106,11 +107,10 @@ export class DataConvClient {
     const clientAssertion = requireText(options.clientAssertion, 'clientAssertion');
     const subjectTokenType = options.subjectTokenType || 'urn:ietf:params:oauth:token-type:id_token';
     const clientAssertionType = options.clientAssertionType || 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
-    const endpointPath = options.endpointPath || '/exchange';
 
     const response = await this.request({
       method: 'POST',
-      url: endpointPath,
+      url: '/exchange',
       headers: {
         'Content-Type': 'application/json',
         ...(options.apiKey ? { 'X-API-Key': options.apiKey } : {})
@@ -123,6 +123,7 @@ export class DataConvClient {
         client_assertion: clientAssertion,
         scope: String(options.scope || '').trim(),
         ...(options.apiKey ? { api_key: options.apiKey } : {}),
+        ...(options.apiKeyProfile ? { api_key_profile: options.apiKeyProfile } : {}),
         ...(options.organization ? { organization: options.organization } : {}),
         ...(options.operationalSubject ? { operational_subject: options.operationalSubject } : {})
       }
@@ -136,6 +137,23 @@ export class DataConvClient {
 
   async createTenantApiKeyActions(options: DataConvApiKeyCreateActionsOptions): Promise<DataConvApiKeyCreateActionsResult> {
     return this.updateTenantApiKeyActions('/_create', options);
+  }
+
+  async createTenantApiKeyRules(options: Omit<DataConvApiKeyCreateActionsOptions, 'actions'> & {
+    rules: DataConvApiKeyAuthorizationRule[];
+  }): Promise<DataConvApiKeyCreateActionsResult> {
+    return this.createTenantApiKeyActions({
+      ...options,
+      actions: (options.rules || []).map((rule) => ({
+        '@context': 'https://schema.org',
+        '@type': 'UpdateAction',
+        agent: { email: rule.agentEmail },
+        scope: [...(rule.scopes || [])],
+        ...(rule.target ? { target: rule.target } : {}),
+        ...(rule.odrlPolicy ? { instrument: rule.odrlPolicy } : {}),
+        ...(rule.expiresInSeconds ? { expires_in_seconds: rule.expiresInSeconds } : {})
+      }))
+    });
   }
 
   async disableTenantApiKeyActions(options: DataConvApiKeyLifecycleOptions): Promise<DataConvApiKeyLifecycleResult> {

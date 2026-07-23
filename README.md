@@ -16,6 +16,9 @@ TypeScript SDK for consuming the `adapter-ingestion-py` pre-conversion API.
   - [Multipart / local file upload](#multipart--local-file-upload)
   - [Backend initialization](#backend-initialization)
   - [CLI](#cli)
+    - [Recommended local setup (no IP/DID flags in commands)](#recommended-local-setup-no-ipdid-flags-in-commands)
+    - [Command helper and endpoint-resolution conventions](#command-helper-and-endpoint-resolution-conventions)
+    - [One-shot evidence script](#one-shot-evidence-script)
   - [Notes](#notes)
 
 ---
@@ -361,28 +364,19 @@ const client = new DataConvClient({
 
 The package exposes a CLI that can first create mapping config, then upload a file, wait for `_upload-response`, save the full DIDComm response to JSON, and print the main outcome summary.
 
-### Recommended local setup (no IP/DID flags in commands)
+### Local setup
 
-Configure once via environment variables and use only high-level commands afterwards:
+Copy `.env.example` to `.env.local`, fill in your values, and source it before running commands:
 
 ```bash
-export DATACONV_DATASPACE_NAME="GLOBAL-DATACARE"
-export DATACONV_DATASPACE_PROFILES='{
-  "GLOBAL-DATACARE": {
-    "baseUrl": "http://127.0.0.1:8080",
-    "issuerDid": "did:web:globaldatacare.es:employee:loader",
-    "tenantId": "demo-tenant",
-    "jurisdiction": "es",
-    "sector": "onehealth-research",
-    "softwareId": "qvet",
-    "resourceType": "Composition"
-  }
-}'
+cp .env.example .env.local
+# edit .env.local: tenantId, issuerDid, base URL, DATACONV_ID_TOKEN
+source .env.local
 ```
 
-With this profile, commands do not need `--base-url` / `--issuer-did`.
+The helper script `scripts/evidencia-publicacion.sh` loads `.env.local` automatically (falls back to `.env.example`).
 
-Evaluator-oriented defaults are also available in `.env.example` (tenant format `VATES-<NIF>`, `softwareId=api-config`, `resourceType=excel`).
+For advanced DID document-based endpoint resolution and full command reference, see [docs/cli-reference.md](docs/cli-reference.md).
 
 ```bash
 # 1) login against your IdP (store OIDC id_token locally)
@@ -424,12 +418,43 @@ The CLI prints evidence-style process logs, for example:
 - automatic `_upload-response` polling
 - final summary and JSON artifact path
 
+### Command helper and endpoint-resolution conventions
+
+Use per-command help to see expected conventions:
+
+```bash
+dataconv help exchange
+dataconv help upload
+dataconv search --help
+```
+
+Service IDs used as CLI resolution metadata:
+
+- `exchange`: `#identity:openid:token:_exchange`
+- `upload` (update): `#dataset:{softwareId}:{resourceType}:_upload`
+- `patch` (publish): `#dataset:{softwareId}:{resourceType}:_patch`
+- `batch` (publish): `#dataset:{softwareId}:{resourceType}:_batch`
+- `search`: `#dataset:api:{resourceType}:_search`
+
+Fallback env vars for localhost testing:
+
+- `PUBLISHER_OPENID_EXCHANGE`
+- `PUBLISHER_DATASET_UPDATE`
+- `PUBLISHER_DATASET_PATCH`
+- `PUBLISHER_DATASET_BATCH`
+- `PUBLISHER_DATASET_SEARCH`
+
+Important contract note:
+
+- `--organization-did` and `--service-id` are stored as CLI-side endpoint-resolution context.
+- The `/exchange` request body remains OpenAPI-compatible (no extra payload fields derived from service-id/fallback metadata).
+
 ### One-shot evidence script
 
 Use the included helper to run login/exchange/upload/search in one shot:
 
 ```bash
-chmod +x ./scripts/evidencia-publicacion.sh
+chmod +x ./scripts/publish-dataset.sh
 ./scripts/evidencia-publicacion.sh
 
 # opcional: forzar mapping JSON externo + promoción por batch
@@ -441,10 +466,10 @@ DATACONV_PROMOTION_MODE=batch \
 
 Generated files:
 
-- `./artifacts/evidencia-publicacion/upload-response.json`
-- `./artifacts/evidencia-publicacion/search-subject.json`
-- `./artifacts/evidencia-publicacion/search-documentreference.json`
-- `./artifacts/evidencia-publicacion/dcat-ap-datasets-publicados.json`
+- `./artifacts/datasets/upload-response.json`
+- `./artifacts/datasets/search-subject.json`
+- `./artifacts/datasets/search-documentreference.json`
+- `./artifacts/datasets/dcat-files.json`
 
 Notes on scope model and flow:
 
@@ -453,6 +478,10 @@ Notes on scope model and flow:
 - `tenantId`, `jurisdiction`, `sector`, and `softwareId` are taken from env/profile defaults (recommended tenant format: `VATES-<NIF>`).
 - API keys do **not** mint `id_token`s. The `id_token` always comes from the external IdP/login step.
 - API keys are used at `/exchange` time to constrain or delegate scopes. The resulting Bearer `access_token` is what you use for config, upload, patch/batch, and search.
+- For explicit exceptional non-confidential mode, send `api_key_profile=api-key-exception.v1` in `/exchange` payload (server must allow it).
+- Recommended API key authorization model is atomic:
+  - one rule entry (`data[].resource`) = one consent-like authorization rule = one ODRL policy object.
+  - include `scope` (mandatory), and preferably `target` + `instrument` (ODRL).
 
 When `--service-did` is used, resolve it locally with either `--resolved-base-url` or the `DATACONV_SERVICE_DID_MAP` env variable:
 
@@ -489,3 +518,7 @@ export DATACONV_SERVICE_DID_MAP='{"did:web:dataconv-api.example.org":"http://127
 - CSV upload is modeled in the SDK but the current backend only accepts Excel/XLSX.
 - `gdc-common-utils-ts` is an npm dependency; this SDK adds concrete pre-conversion types on top of those DIDComm helpers.
 - ICA VCs and `controller.publicKeyJwk` belong to the `_activate` onboarding flow. `DataConvClient` is used afterwards, once the tenant is already activated.
+
+## Roadmap and Briefing
+- `BRIEFING_DATASPACE_EN.md`
+- `TODO_ROADMAP.md`

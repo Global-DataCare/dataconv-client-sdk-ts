@@ -252,9 +252,9 @@ export interface DataConvExchangeTokenOptions {
   clientAssertionType?: string;
   scope?: string;
   apiKey?: string;
+  apiKeyProfile?: string;
   organization?: string;
   operationalSubject?: string;
-  endpointPath?: '/exchange' | '/oauth/token';
 }
 
 export interface DataConvExchangeTokenResult {
@@ -316,6 +316,14 @@ export interface DataConvApiKeyCreateActionsOptions {
   sector?: string;
   authorizationToken: string;
   actions: DataConvApiKeyAction[];
+}
+
+export interface DataConvApiKeyAuthorizationRule {
+  agentEmail: string;
+  scopes: string[];
+  target?: string;
+  odrlPolicy?: Record<string, unknown>;
+  expiresInSeconds?: number;
 }
 
 export interface DataConvApiKeyLifecycleOptions extends DataConvApiKeyCreateActionsOptions {}

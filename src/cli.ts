@@ -28,6 +28,13 @@ type CliState = {
   sessionExpiresAt?: number;
   subject?: string;
   organization?: string;
+  organizationDid?: string;
+  serviceId?: string;
+  publisherTokenExchangeFallback?: string;
+  publisherDatasetUpdateFallback?: string;
+  publisherDatasetPatchFallback?: string;
+  publisherDatasetBatchFallback?: string;
+  publisherDatasetSearchFallback?: string;
   apiKey?: string;
 };
 
@@ -53,7 +60,8 @@ function usage(): string {
     'Commands:',
     '  dataconv login --id-token <jwt> [--base-url <url>] [--tenant-id <id>] [--software-id <id>]',
     '  dataconv exchange --scope "dataconv.upload" [--vp-token <jwt>] [--client-assertion <jwt>]',
-    '                    [--api-key <key>] [--organization <org>] [--operational-subject <did>]',
+    '                    [--api-key <key>] [--organization <org>] [--organization-did <did:web:...>] ',
+    '                    [--service-id <publisher-token-exchange|...>] [--operational-subject <did>]',
     '  dataconv upload <ruta.xlsx> [--scope "dataconv.upload"] [--mapping-json <path>] [--header-row-index <n>] [--output-json <path>]',
     '  dataconv search --resource-type <FHIRType> [--scope "dataconv.read"] [--params <json>] [--output-json <path>]',
     '  dataconv patch --thid <thid> [--resource-type <FHIRType>] [--scope "dataconv.patch"] [--output-json <path>]',
@@ -74,6 +82,101 @@ function usage(): string {
     '  --api-key <key>              Default: DATACONV_API_KEY',
     '  --help'
   ].join('\n');
+}
+
+function commandHelp(command?: string): string {
+  const common = [
+    'Common options:',
+    '  --dataspace-name <name>      Default: DATACONV_DATASPACE_NAME or GLOBAL-DATACARE',
+    '  --base-url <url>             Default: DATACONV_BASE_URL or http://localhost:8080',
+    '  --issuer-did <did>           Default: DATACONV_ISSUER_DID or did:web:globaldatacare.es:employee:loader',
+    '  --tenant-id <tenant>         Default: DATACONV_TENANT_ID or tenant-a',
+    '  --jurisdiction <code>        Default: DATACONV_JURISDICTION or es',
+    '  --sector <sector>            Default: DATACONV_SECTOR or onehealth-research',
+    '  --software-id <software>     Default: DATACONV_SOFTWARE_ID or qvet',
+    '  --resource-type <type>       Default: DATACONV_RESOURCE_TYPE or Composition',
+    '  --state-file <path>          Default: ~/.dataconv/state.json',
+    '  --api-key <key>              Default: DATACONV_API_KEY',
+  ].join('\n');
+
+  const exchange = [
+    'Command: exchange',
+    '  dataconv exchange --scope <scope> [--organization <org>] [--organization-did <did:web:...>] [--service-id <id>] [--operational-subject <did>]',
+    '',
+    'Notes:',
+    '  - serviceId recomendado: #identity:openid:token:_exchange',
+    '  - Respeta contrato OpenAPI: el payload de /exchange NO se altera con service-id ni fallbacks.',
+    '  - --organization-did y --service-id se guardan en estado CLI para resolución de endpoints fuera de payload.',
+    '  - DID document objetivo para pruebas: <did-web>/.well-known/did.json',
+    '',
+    'Fallback env vars (localhost testing):',
+    '  PUBLISHER_OPENID_EXCHANGE',
+    '  PUBLISHER_DATASET_UPDATE',
+    '  PUBLISHER_DATASET_PATCH',
+    '  PUBLISHER_DATASET_BATCH',
+    '  PUBLISHER_DATASET_SEARCH',
+  ].join('\n');
+
+  const upload = [
+    'Command: upload',
+    '  dataconv upload <ruta.xlsx> [--scope <scope>] [--mapping-json <path>] [--header-row-index <n>] [--output-json <path>]',
+    '',
+    'Expected serviceId: #dataset:{softwareId}:{resourceType}:_update',
+    'Response endpoint: se toma del header Location (publisher-dataset-update-response).',
+  ].join('\n');
+
+  const patch = [
+    'Command: patch',
+    '  dataconv patch --thid <thid> [--resource-type <FHIRType>] [--scope <scope>] [--output-json <path>]',
+    '',
+    'Expected serviceId: #dataset:{softwareId}:{resourceType}:_patch',
+  ].join('\n');
+
+  const batch = [
+    'Command: batch',
+    '  dataconv batch --thid <thid> [--resource-type <FHIRType>] [--scope <scope>] [--output-json <path>]',
+    '',
+    'Expected serviceId: #dataset:{softwareId}:{resourceType}:_batch',
+  ].join('\n');
+
+  const search = [
+    'Command: search',
+    '  dataconv search --resource-type <FHIRType> [--scope <scope>] [--params <json>] [--output-json <path>]',
+    '',
+    'Expected serviceId: #dataset:api:{resourceType}:_search',
+  ].join('\n');
+
+  const login = [
+    'Command: login',
+    '  dataconv login --id-token <jwt> [--base-url <url>] [--tenant-id <id>] [--software-id <id>] [--vp-token <jwt>]',
+  ].join('\n');
+
+  const apiKeyCreate = [
+    'Command: api-key-create',
+    '  dataconv api-key-create --email <email> --target <endpointId> [--scope <scope1,scope2>] [--instrument <json>]',
+  ].join('\n');
+
+  const whoami = [
+    'Command: whoami',
+    '  dataconv whoami',
+  ].join('\n');
+
+  const byCommand: Record<string, string> = {
+    login,
+    exchange,
+    upload,
+    patch,
+    batch,
+    search,
+    'api-key-create': apiKeyCreate,
+    whoami,
+  };
+
+  const key = String(command || '').trim();
+  if (!key) {
+    return `${usage()}\n\n${common}\n\nUse: dataconv help <command>`;
+  }
+  return `${byCommand[key] || `Comando no soportado: ${key}`}\n\n${common}`;
 }
 
 function parseObjectJson(value: string | undefined, fieldName: string): Record<string, unknown> | undefined {
@@ -219,9 +322,18 @@ function parseCommonArgs(args: string[], base?: Partial<CliState>): CliState {
     sessionExpiresAt: base?.sessionExpiresAt,
     subject: base?.subject,
     organization: base?.organization,
+    organizationDid: base?.organizationDid,
+    serviceId: getArgValue(args, '--service-id') || base?.serviceId || process.env.DATACONV_SERVICE_ID || undefined,
+    publisherTokenExchangeFallback: base?.publisherTokenExchangeFallback || process.env.PUBLISHER_OPENID_EXCHANGE || undefined,
+    publisherDatasetUpdateFallback: base?.publisherDatasetUpdateFallback || process.env.PUBLISHER_DATASET_UPDATE || undefined,
+    publisherDatasetPatchFallback: base?.publisherDatasetPatchFallback || process.env.PUBLISHER_DATASET_PATCH || undefined,
+    publisherDatasetBatchFallback: base?.publisherDatasetBatchFallback || process.env.PUBLISHER_DATASET_BATCH || undefined,
+    publisherDatasetSearchFallback: base?.publisherDatasetSearchFallback || process.env.PUBLISHER_DATASET_SEARCH || undefined,
     apiKey: getArgValue(args, '--api-key') || base?.apiKey || process.env.DATACONV_API_KEY || undefined
   };
 }
+
+
 
 async function loadState(statePath: string): Promise<CliState | undefined> {
   try {
@@ -361,6 +473,8 @@ async function cmdExchange(args: string[], statePath: string, currentState?: Cli
   const vpToken = getArgValue(args, '--vp-token') || process.env.DATACONV_VP_TOKEN || state.vpToken || buildDevVpToken(state.idToken, holderDid);
   const clientAssertion = getArgValue(args, '--client-assertion') || process.env.DATACONV_CLIENT_ASSERTION || buildClientAssertion(state.baseUrl, holderDid, vpToken);
   const organization = getArgValue(args, '--organization') || process.env.DATACONV_ORGANIZATION || state.organization || '';
+  const organizationDid = getArgValue(args, '--organization-did') || process.env.DATACONV_ORGANIZATION_DID || state.organizationDid || '';
+  const serviceId = getArgValue(args, '--service-id') || process.env.DATACONV_SERVICE_ID || state.serviceId || '';
   const operationalSubject = getArgValue(args, '--operational-subject') || process.env.DATACONV_OPERATIONAL_SUBJECT_DID || state.subject || '';
 
   const client = new DataConvClient({
@@ -393,10 +507,26 @@ async function cmdExchange(args: string[], statePath: string, currentState?: Cli
     sessionExpiresAt: expiresAt,
     subject: String(exchanged.subject || ''),
     organization: String(exchanged.organization || ''),
+    organizationDid: organizationDid || undefined,
+    serviceId: serviceId || undefined,
+    publisherTokenExchangeFallback: state.publisherTokenExchangeFallback,
+    publisherDatasetUpdateFallback: state.publisherDatasetUpdateFallback,
+    publisherDatasetPatchFallback: state.publisherDatasetPatchFallback,
+    publisherDatasetBatchFallback: state.publisherDatasetBatchFallback,
+    publisherDatasetSearchFallback: state.publisherDatasetSearchFallback,
     apiKey: state.apiKey,
   };
   await saveState(statePath, nextState);
-  logInfo(`Autenticando con ${state.dataspaceName || 'GLOBAL-DATACARE'} (OAuth 2.0 + /exchange)...`);
+  logInfo(`Autenticando con ${state.dataspaceName || 'GLOBAL-DATACARE'} (OAuth 2.0)...`);
+  if (organizationDid) {
+    logInfo(`organizationDid=${organizationDid}`);
+  }
+  if (serviceId) {
+    logInfo(`serviceId=${serviceId}`);
+  }
+  if (state.publisherTokenExchangeFallback) {
+    logInfo(`fallback token-exchange=${state.publisherTokenExchangeFallback}`);
+  }
   logSuccess(`Token de sesión obtenido. scope=${nextState.sessionScope} exp=${new Date(expiresAt).toISOString()}`);
 }
 
@@ -689,6 +819,13 @@ async function cmdWhoami(statePath: string, currentState?: CliState): Promise<vo
     subject: state.subject || '',
     organization: state.organization || ''
     ,
+    organizationDid: state.organizationDid || '',
+    serviceId: state.serviceId || '',
+    entityOpenidExchangeFallback: state.publisherTokenExchangeFallback || '',
+    publisherDatasetUpdateFallback: state.publisherDatasetUpdateFallback || '',
+    publisherDatasetPatchFallback: state.publisherDatasetPatchFallback || '',
+    publisherDatasetBatchFallback: state.publisherDatasetBatchFallback || '',
+    publisherDatasetSearchFallback: state.publisherDatasetSearchFallback || '',
     hasApiKey: Boolean(state.apiKey)
   }, null, 2));
 }
@@ -782,13 +919,21 @@ async function cmdApiKeyCreate(args: string[], statePath: string, currentState?:
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
-  if (!argv.length || hasFlag(argv, '--help')) {
-    console.log(usage());
+  if (!argv.length) {
+    console.log(commandHelp());
     process.exit(0);
   }
 
   const command = argv[0];
   const args = argv.slice(1);
+  if (command === 'help') {
+    console.log(commandHelp(args[0]));
+    process.exit(0);
+  }
+  if (hasFlag(args, '--help')) {
+    console.log(commandHelp(command));
+    process.exit(0);
+  }
   const statePath = defaultStatePath(getArgValue(argv, '--state-file'));
   const state = await loadState(statePath);
 

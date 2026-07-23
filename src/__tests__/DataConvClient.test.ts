@@ -759,6 +759,7 @@ describe('DataConvClient', () => {
       clientAssertion: 'client-assertion-1',
       scope: 'dataconv.upload',
       apiKey: 'demo-api-key',
+      apiKeyProfile: 'api-key-exception.v1',
       organization: 'VATES-A00000001',
       operationalSubject: 'did:web:example:employee:controller'
     });
@@ -773,6 +774,7 @@ describe('DataConvClient', () => {
         vp_token: 'vp-token-1',
         client_assertion: 'client-assertion-1',
         api_key: 'demo-api-key',
+        api_key_profile: 'api-key-exception.v1',
         organization: 'VATES-A00000001',
         operational_subject: 'did:web:example:employee:controller'
       })
@@ -833,6 +835,48 @@ describe('DataConvClient', () => {
             resource: expect.objectContaining({
               '@type': 'UpdateAction',
               target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_update'
+            })
+          })
+        ]
+      })
+    }));
+  });
+
+  it('creates tenant API key rules using atomic helper', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: { data: [{ resource: { identifier: 'api-key-uuid-2' } }] }
+    });
+
+    const result = await client.createTenantApiKeyRules({
+      authorizationToken: 'session-manage-token',
+      tenantId: 'VATES-A00000001',
+      jurisdiction: 'ES',
+      sector: 'animal-care',
+      rules: [
+        {
+          agentEmail: 'ops@example.com',
+          scopes: ['dataconv.upload'],
+          target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_upload',
+          odrlPolicy: { permission: [{ action: 'upload' }] },
+          expiresInSeconds: 600
+        }
+      ]
+    });
+
+    expect(result.data?.[0]?.resource?.identifier).toBe('api-key-uuid-2');
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/VATES-A00000001/cds-ES/v1/animal-care/api-key/org.schema/action/_create',
+      data: expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            resource: expect.objectContaining({
+              '@type': 'UpdateAction',
+              target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_upload',
+              scope: ['dataconv.upload'],
+              expires_in_seconds: 600
             })
           })
         ]
