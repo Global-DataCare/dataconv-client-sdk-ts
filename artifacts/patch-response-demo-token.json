@@ -1,0 +1,117 @@
+{
+  "type": "https://didcomm.org/plaintext/2.0/message",
+  "thid": "68aa282a-8834-43be-8a5c-63f134fe5447",
+  "body": {
+    "status": "success",
+    "promotedCount": 2952,
+    "message": "Promoted 2952 resources to userSelected=false",
+    "issues": {
+      "resourceType": "OperationOutcome",
+      "issue": [
+        {
+          "severity": "information",
+          "code": "informational",
+          "details": {
+            "text": "Datasets confirmados y actualizados"
+          },
+          "diagnostics": "Confirmación completada para thid=68aa282a-8834-43be-8a5c-63f134fe5447. Recursos promovidos=2952. Datasets actualizados=3."
+        }
+      ]
+    },
+    "data": [
+      {
+        "response": {
+          "status": "200"
+        },
+        "meta": {
+          "confirmedAt": "2026-03-23T05:23:19.308572+00:00",
+          "tenantId": "VATES-B12345678",
+          "jurisdiction": "ES",
+          "sector": "animal-care",
+          "resourceType": "Composition",
+          "updatedCount": 839
+        },
+        "resource": {
+          "@context": "https://www.w3.org/ns/dcat",
+          "@type": "dcat:Dataset",
+          "dct:identifier": "VATES-B12345678:Composition:68aa282a-8834-43be-8a5c-63f134fe5447:1",
+          "dct:title": "VATES-B12345678 — Composition actualizado",
+          "dct:description": "Dataset actualizado en la fase de confirmación para Composition (thid=68aa282a-8834-43be-8a5c-63f134fe5447).",
+          "dct:publisher": {
+            "@id": "urn:org:VATES-B12345678",
+            "foaf:name": "VATES-B12345678"
+          },
+          "dcat:distribution": [
+            {
+              "@type": "dcat:Distribution",
+              "dct:format": "application/fhir+json",
+              "dcat:accessURL": "https://globaldatacare.es/publisher/cds-ES/v1/animal-care/VATES-B12345678/dataset/Composition/_search"
+            }
+          ]
+        }
+      },
+      {
+        "response": {
+          "status": "200"
+        },
+        "meta": {
+          "confirmedAt": "2026-03-23T05:23:19.308572+00:00",
+          "tenantId": "VATES-B12345678",
+          "jurisdiction": "ES",
+          "sector": "animal-care",
+          "resourceType": "DocumentReference",
+          "updatedCount": 1060
+        },
+        "resource": {
+          "@context": "https://www.w3.org/ns/dcat",
+          "@type": "dcat:Dataset",
+          "dct:identifier": "VATES-B12345678:DocumentReference:68aa282a-8834-43be-8a5c-63f134fe5447:2",
+          "dct:title": "VATES-B12345678 — DocumentReference actualizado",
+          "dct:description": "Dataset actualizado en la fase de confirmación para DocumentReference (thid=68aa282a-8834-43be-8a5c-63f134fe5447).",
+          "dct:publisher": {
+            "@id": "urn:org:VATES-B12345678",
+            "foaf:name": "VATES-B12345678"
+          },
+          "dcat:distribution": [
+            {
+              "@type": "dcat:Distribution",
+              "dct:format": "application/fhir+json",
+              "dcat:accessURL": "https://globaldatacare.es/publisher/cds-ES/v1/animal-care/VATES-B12345678/dataset/DocumentReference/_search"
+            }
+          ]
+        }
+      },
+      {
+        "response": {
+          "status": "200"
+        },
+        "meta": {
+          "confirmedAt": "2026-03-23T05:23:19.308572+00:00",
+          "tenantId": "VATES-B12345678",
+          "jurisdiction": "ES",
+          "sector": "animal-care",
+          "resourceType": "Encounter",
+          "updatedCount": 1053
+        },
+        "resource": {
+          "@context": "https://www.w3.org/ns/dcat",
+          "@type": "dcat:Dataset",
+          "dct:identifier": "VATES-B12345678:Encounter:68aa282a-8834-43be-8a5c-63f134fe5447:3",
+          "dct:title": "VATES-B12345678 — Encounter actualizado",
+          "dct:description": "Dataset actualizado en la fase de confirmación para Encounter (thid=68aa282a-8834-43be-8a5c-63f134fe5447).",
+          "dct:publisher": {
+            "@id": "urn:org:VATES-B12345678",
+            "foaf:name": "VATES-B12345678"
+          },
+          "dcat:distribution": [
+            {
+              "@type": "dcat:Distribution",
+              "dct:format": "application/fhir+json",
+              "dcat:accessURL": "https://globaldatacare.es/publisher/cds-ES/v1/animal-care/VATES-B12345678/dataset/Encounter/_search"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "headerRowIndex": 3,
+  "fieldMap": {
+    "section": "Tipo",
+    "concept": "Motivo",
+    "subject_animai-species": "Mascota",
+    "personal_id": "Microchip",
+    "date": "Fecha",
+    "time": "Hora"
+  }
+}

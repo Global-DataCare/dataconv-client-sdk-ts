@@ -61,7 +61,7 @@ describe('DataConvClient', () => {
   it('creates tenant config requests', async () => {
     mockedAxios.request.mockResolvedValueOnce({
       status: 202,
-      headers: { location: '/host/cds-ES/v1/onehealth-research/clinic-demo/qvet-v1.0/config/_create-response?thid=cfg-1' }
+      headers: { location: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/qvet-v1.0/config/_create-response?thid=cfg-1' }
     });
 
     const result = await client.createConfig({
@@ -82,7 +82,7 @@ describe('DataConvClient', () => {
     expect(result.location).toContain('_create-response');
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
-      url: '/host/cds-ES/v1/onehealth-research/clinic-demo/qvet-v1.0/config/_create',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/qvet-v1.0/config/_create',
       headers: { 'Content-Type': 'application/didcomm-plain+json' },
       data: expect.objectContaining({
         iss: 'did:web:clinic.example:employee:it:loader',
@@ -107,6 +107,12 @@ describe('DataConvClient', () => {
         },
         endpoints: {
           upload: '/host/.../_upload'
+        },
+        allowedJurisdictions: ['ES', 'PT'],
+        allowedSectors: ['onehealth-research'],
+        auth: {
+          exchangeEndpoint: '/exchange',
+          apiKeySupported: true
         }
       }
     });
@@ -123,6 +129,9 @@ describe('DataConvClient', () => {
       { code: 'coverage_insurer', display: 'Identificador o nombre de la aseguradora' }
     ]);
     expect(result.endpoints.upload).toBe('/host/.../_upload');
+    expect(result.allowedJurisdictions).toEqual(['ES', 'PT']);
+    expect(result.allowedSectors).toEqual(['onehealth-research']);
+    expect(result.auth?.exchangeEndpoint).toBe('/exchange');
   });
 
   it('returns supported fields as code/display pairs', async () => {
@@ -159,6 +168,27 @@ describe('DataConvClient', () => {
     expect(client.getSelectedFieldCodes()).toEqual([]);
   });
 
+  it('tracks selected field mappings for conflict messaging', () => {
+    expect(client.selectField('section', 'SECCION')).toBe(true);
+    expect(client.selectField('coverage_insurer', 'ASEGURADORA')).toBe(true);
+
+    expect(client.getSelectedFieldMappings()).toEqual({
+      section: 'SECCION',
+      coverage_insurer: 'ASEGURADORA'
+    });
+    expect(client.getSelectedMappingForField('section')).toBe('SECCION');
+    expect(client.getSelectedMappingForField('unknown')).toBeUndefined();
+
+    expect(client.selectField('section', 'OTRA_COLUMNA')).toBe(false);
+    expect(client.getSelectedMappingForField('section')).toBe('SECCION');
+
+    expect(client.unselectField('section')).toBe(true);
+    expect(client.getSelectedMappingForField('section')).toBeUndefined();
+
+    client.clearSelectedFields();
+    expect(client.getSelectedFieldMappings()).toEqual({});
+  });
+
   it('prefers tenantId over alternateName for tenant config endpoints', async () => {
     const vatClient = new DataConvClient({
       issuerDid: 'did:web:clinic.example:employee:it:loader',
@@ -172,7 +202,7 @@ describe('DataConvClient', () => {
 
     mockedAxios.request.mockResolvedValueOnce({
       status: 202,
-      headers: { location: '/host/cds-ES/v1/onehealth-research/VATES-B00000000/qvet-v1.0/config/_create-response?thid=cfg-1' }
+      headers: { location: '/publisher/cds-ES/v1/onehealth-research/VATES-B00000000/qvet-v1.0/config/_create-response?thid=cfg-1' }
     });
 
     await vatClient.createConfig({
@@ -180,7 +210,7 @@ describe('DataConvClient', () => {
     });
 
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
-      url: '/host/cds-ES/v1/onehealth-research/VATES-B00000000/qvet-v1.0/config/_create'
+      url: '/publisher/cds-ES/v1/onehealth-research/VATES-B00000000/qvet-v1.0/config/_create'
     }));
   });
 
@@ -232,7 +262,7 @@ describe('DataConvClient', () => {
   it('uploads a spreadsheet by link as a DIDComm attachment', async () => {
     mockedAxios.request.mockResolvedValueOnce({
       status: 202,
-      headers: { location: '/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/Composition/_upload-response?thid=up-1' }
+      headers: { location: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/qvet-v1.0/Composition/_upload-response?thid=up-1' }
     });
 
     const result = await client.uploadWithLink('https://example.com/exampleQvetES.xlsx?dl=1', {
@@ -243,7 +273,7 @@ describe('DataConvClient', () => {
     expect(result.thid).toMatch(UUID_V4_REGEX);
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
-      url: '/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/Composition/_upload',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/qvet-v1.0/Composition/_upload',
       headers: { 'Content-Type': 'application/didcomm-plain+json' },
       data: expect.objectContaining({
         sourceFormat: 'excel',
@@ -297,7 +327,7 @@ describe('DataConvClient', () => {
     });
 
     const requestConfig = mockedAxios.request.mock.calls[0]?.[0];
-    expect(requestConfig?.url).toBe('/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/Composition/_upload');
+    expect(requestConfig?.url).toBe('/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/qvet-v1.0/Composition/_upload');
     expect(requestConfig?.data).toBeInstanceOf(FormData);
     const payloadEntry = Array.from((requestConfig?.data as FormData).entries()).find(([key]) => key === 'payload');
     expect(payloadEntry?.[1]).toEqual(expect.any(String));
@@ -451,7 +481,7 @@ describe('DataConvClient', () => {
     });
 
     mockFetch.mockResolvedValue(
-      createMockResponse(202, new Headers({ location: '/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/Composition/_upload-response?thid=up-1' }), {})
+      createMockResponse(202, new Headers({ location: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/qvet-v1.0/Composition/_upload-response?thid=up-1' }), {})
     );
 
     const result = await fetchClient.uploadWithLink('https://example.com/exampleQvetES.xlsx?dl=1', {
@@ -461,7 +491,7 @@ describe('DataConvClient', () => {
 
     expect(result.thid).toMatch(UUID_V4_REGEX);
     expect(mockFetch).toHaveBeenCalledWith(
-      'http://localhost:8080/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/Composition/_upload',
+      'http://localhost:8080/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/qvet-v1.0/Composition/_upload',
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/didcomm-plain+json' },
@@ -535,7 +565,7 @@ describe('DataConvClient', () => {
     expect(response.body?.promotedCount).toBe(2);
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
-      url: '/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/Composition/_patch?thid=up-1',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/qvet-v1.0/Composition/_patch?thid=up-1',
       headers: { 'Content-Type': 'application/didcomm-plain+json' },
       data: expect.objectContaining({
         id_token: 'session-id-1',
@@ -581,7 +611,7 @@ describe('DataConvClient', () => {
     expect(response.total).toBe(1);
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
-      url: '/host/cds-ES/v1/onehealth-research/clinic-demo/org.hl7.fhir.api/DocumentReference/_search',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/DocumentReference/_search',
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer session-id-1'
@@ -616,7 +646,7 @@ describe('DataConvClient', () => {
 
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
-      url: '/host/cds-ES/v1/onehealth-research/clinic-demo/org.hl7.fhir.api/DocumentReference/_search',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/DocumentReference/_search',
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer session-id-1'
@@ -632,7 +662,7 @@ describe('DataConvClient', () => {
     mockedAxios.request
       .mockResolvedValueOnce({
         status: 202,
-        headers: { location: '/host/cds-ES/v1/onehealth-research/clinic-demo/qvet-v1.0/config/_create-response?thid=cfg-1' }
+        headers: { location: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/qvet-v1.0/config/_create-response?thid=cfg-1' }
       })
       .mockResolvedValueOnce({ status: 202, headers: { 'retry-after': '0' } })
       .mockResolvedValueOnce({
@@ -653,7 +683,7 @@ describe('DataConvClient', () => {
       })
       .mockResolvedValueOnce({
         status: 202,
-        headers: { location: '/clinic-demo/cds-ES/v1/onehealth-research/digitaltwin/qvet-v1.0/Composition/_upload-response?thid=up-1' }
+        headers: { location: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/qvet-v1.0/Composition/_upload-response?thid=up-1' }
       })
       .mockResolvedValueOnce({ status: 202, headers: { 'retry-after': '0' } })
       .mockResolvedValueOnce({
@@ -709,6 +739,168 @@ describe('DataConvClient', () => {
     expect(uploadResponse.thid).toBe('up-1');
     expect(patchResponse.body?.promotedCount).toBe(2);
     expect(searchResponse.total).toBe(1);
+  });
+
+  it('calls exchange endpoint and returns access token payload', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        access_token: 'session-token-1',
+        token_type: 'Bearer',
+        expires_in: 900,
+        scope: 'dataconv.upload'
+      }
+    });
+
+    const result = await client.exchangeToken({
+      subjectToken: 'id-token-1',
+      vpToken: 'vp-token-1',
+      clientAssertion: 'client-assertion-1',
+      scope: 'dataconv.upload',
+      apiKey: 'demo-api-key',
+      apiKeyProfile: 'api-key-exception.v1',
+      organization: 'VATES-A00000001',
+      operationalSubject: 'did:web:example:employee:controller'
+    });
+
+    expect(result.access_token).toBe('session-token-1');
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/exchange',
+      headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+      data: expect.objectContaining({
+        subject_token: 'id-token-1',
+        vp_token: 'vp-token-1',
+        client_assertion: 'client-assertion-1',
+        api_key: 'demo-api-key',
+        api_key_profile: 'api-key-exception.v1',
+        organization: 'VATES-A00000001',
+        operational_subject: 'did:web:example:employee:controller'
+      })
+    }));
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      headers: expect.objectContaining({
+        'X-API-Key': 'demo-api-key'
+      })
+    }));
+  });
+
+  it('creates tenant API key actions using schema action endpoint', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        data: [
+          {
+            resource: {
+              identifier: 'api-key-uuid-1',
+              actionStatus: 'active',
+              agent: { sameAs: 'zMockedSameAsHash' },
+              apiKey: 'dck_abc'
+            }
+          }
+        ]
+      }
+    });
+
+    const result = await client.createTenantApiKeyActions({
+      authorizationToken: 'session-manage-token',
+      tenantId: 'VATES-A00000001',
+      jurisdiction: 'ES',
+      sector: 'animal-care',
+      actions: [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'UpdateAction',
+          agent: { email: 'alice@example.com' },
+          target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_update',
+          scope: ['dataconv.upload'],
+          instrument: { permission: [{ action: 'update' }] }
+        }
+      ]
+    });
+
+    expect(result.data?.[0]?.resource?.identifier).toBe('api-key-uuid-1');
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/VATES-A00000001/cds-ES/v1/animal-care/api-key/org.schema/action/_create',
+      headers: expect.objectContaining({
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer session-manage-token'
+      }),
+      data: expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            resource: expect.objectContaining({
+              '@type': 'UpdateAction',
+              target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_update'
+            })
+          })
+        ]
+      })
+    }));
+  });
+
+  it('creates tenant API key rules using atomic helper', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: { data: [{ resource: { identifier: 'api-key-uuid-2' } }] }
+    });
+
+    const result = await client.createTenantApiKeyRules({
+      authorizationToken: 'session-manage-token',
+      tenantId: 'VATES-A00000001',
+      jurisdiction: 'ES',
+      sector: 'animal-care',
+      rules: [
+        {
+          agentEmail: 'ops@example.com',
+          scopes: ['dataconv.upload'],
+          target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_upload',
+          odrlPolicy: { permission: [{ action: 'upload' }] },
+          expiresInSeconds: 600
+        }
+      ]
+    });
+
+    expect(result.data?.[0]?.resource?.identifier).toBe('api-key-uuid-2');
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/VATES-A00000001/cds-ES/v1/animal-care/api-key/org.schema/action/_create',
+      data: expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            resource: expect.objectContaining({
+              '@type': 'UpdateAction',
+              target: 'publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_upload',
+              scope: ['dataconv.upload'],
+              expires_in_seconds: 600
+            })
+          })
+        ]
+      })
+    }));
+  });
+
+  it('adds Authorization bearer header in multipart upload when authorizationToken is provided', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 202,
+      headers: { location: '/dummy' }
+    });
+
+    await client.uploadWithFile({
+      softwareId: 'qvet-v1.0',
+      fileBytes: new Uint8Array([1, 2, 3]),
+      authorizationToken: 'session-bearer-1'
+    });
+
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      headers: expect.objectContaining({
+        Authorization: 'Bearer session-bearer-1'
+      })
+    }));
   });
 
   it('throws if neither axios nor fetch transport is available', async () => {

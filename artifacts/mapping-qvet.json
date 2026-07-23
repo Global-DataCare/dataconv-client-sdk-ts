@@ -1,0 +1,14 @@
+{
+  "mappingConfig": {
+    "headerRowIndex": 3,
+    "fieldMap": {
+      "section": "SECCION",
+      "family": "FAMILIA",
+      "subfamily": "SUBFAMILIA",
+      "concept": "CONCEPTO",
+      "subject_id": "HISTORIA_ID",
+      "date": "FECHA",
+      "species": "ESPECIE"
+    }
+  }
+}

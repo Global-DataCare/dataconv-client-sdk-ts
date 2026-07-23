@@ -1,0 +1,350 @@
+{
+  "jti": "53ac6d6c-1469-4970-958a-57daeee9c406",
+  "thid": "945468ac-eb2d-4a67-85ee-b94bf7566dbd",
+  "type": "https://didcomm.org/plaintext/2.0/message",
+  "iss": "did:web:globaldatacare.es:employee:preconversion",
+  "aud": "did:web:globaldatacare.es",
+  "iat": 1774141183,
+  "exp": 1774141483,
+  "body": {
+    "resourceType": "Bundle",
+    "type": "batch-response",
+    "issues": {
+      "resourceType": "OperationOutcome",
+      "issue": [
+        {
+          "severity": "information",
+          "code": "informational",
+          "diagnostics": "Job status: succeeded. Se han procesado 5 registros. Se han creado 4 sujetos. Se han generado 5 DocumentReference. Se han generado 5 Encounter. Se han generado 4 Composition. La operación fue procesada en 0 segundos."
+        }
+      ]
+    },
+    "data": [
+      {
+        "type": "ConversionResult",
+        "response": {
+          "status": "200",
+          "outcome": {
+            "resourceType": "OperationOutcome",
+            "issue": [
+              {
+                "severity": "information",
+                "code": "informational",
+                "diagnostics": "Job status: succeeded. Se han procesado 5 registros. Se han creado 4 sujetos. Se han generado 5 DocumentReference. Se han generado 5 Encounter. Se han generado 4 Composition. La operación fue procesada en 0 segundos."
+              }
+            ]
+          }
+        },
+        "resource": {
+
+                "resourceType": "Subject",
+                "id": "3cfa68d2-a0a8-5beb-b0f4-9e2771bee023",
+                "meta": {
+                  "claims": {
+                    "Subject.id": "did:web:globaldatacare.es:animal:subject:zW1dU8yZwD3u3pVPF8obc9ZdfxY8EjSPFrXYWHJeutcopcR",
+                    "Subject.active": "true",
+                    "Subject.language": "es-ES",
+                    "Subject.userSelected": "true"
+                  }
+                },
+                "contained": [
+                  {
+                    "resourceType": "Composition",
+                    "id": "00f728ec-0b24-5105-bd3a-432583d1d8e5",
+                    "meta": {
+                      "claims": {
+                        "Composition.identifier": "00f728ec-0b24-5105-bd3a-432583d1d8e5",
+                        "Composition.subject": "did:web:globaldatacare.es:animal:subject:zW1dU8yZwD3u3pVPF8obc9ZdfxY8EjSPFrXYWHJeutcopcR",
+                        "Composition.section": "http://loinc.org|10160-0",
+                        "Composition.author": "",
+                        "Composition.date": "2026-03-22T00:59:38.206996+00:00",
+                        "Composition.type": "http://loinc.org|10160-0",
+                        "Composition.title": "clinica:medicamentos index",
+                        "Composition.entry": "urn:uuid:86e035bc-6085-510f-8546-f3589c9838eb,urn:uuid:8dbb3728-3070-5713-ad8a-36e266b74c2e,urn:uuid:34a59e89-d598-5d32-98a9-3834de47e693,urn:uuid:7a74bacb-c2ed-5b37-8f1e-97db69866425",
+                        "Composition.userSelected": "true",
+                        "Composition.relatesto-target": "945468ac-eb2d-4a67-85ee-b94bf7566dbd",
+                        "Composition.relatesto-type": "part-of"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "Encounter",
+                    "id": "86e035bc-6085-510f-8546-f3589c9838eb",
+                    "meta": {
+                      "claims": {
+                        "Encounter.identifier": "86e035bc-6085-510f-8546-f3589c9838eb",
+                        "Encounter.subject": "did:web:globaldatacare.es:animal:subject:zW1dU8yZwD3u3pVPF8obc9ZdfxY8EjSPFrXYWHJeutcopcR",
+                        "Encounter.date": "2026-01-27T15:08:12Z",
+                        "Encounter.status": "finished",
+                        "Encounter.class": "http://terminology.hl7.org/CodeSystem/v3-ActCode|AMB",
+                        "Encounter.userSelected": "true"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "Encounter",
+                    "id": "8dbb3728-3070-5713-ad8a-36e266b74c2e",
+                    "meta": {
+                      "claims": {
+                        "Encounter.identifier": "8dbb3728-3070-5713-ad8a-36e266b74c2e",
+                        "Encounter.subject": "did:web:globaldatacare.es:animal:subject:zW1dU8yZwD3u3pVPF8obc9ZdfxY8EjSPFrXYWHJeutcopcR",
+                        "Encounter.date": "2026-01-27T15:08:12Z",
+                        "Encounter.status": "finished",
+                        "Encounter.class": "http://terminology.hl7.org/CodeSystem/v3-ActCode|AMB",
+                        "Encounter.userSelected": "true"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "DocumentReference",
+                    "id": "34a59e89-d598-5d32-98a9-3834de47e693",
+                    "meta": {
+                      "claims": {
+                        "DocumentReference.identifier": "34a59e89-d598-5d32-98a9-3834de47e693",
+                        "DocumentReference.subject": "did:web:globaldatacare.es:animal:subject:zW1dU8yZwD3u3pVPF8obc9ZdfxY8EjSPFrXYWHJeutcopcR",
+                        "DocumentReference.author": "",
+                        "DocumentReference.date": "2026-01-27T15:08:12Z",
+                        "DocumentReference.type": "default",
+                        "DocumentReference.category": "http://loinc.org|10160-0",
+                        "DocumentReference.description": "TRATAMIENTO PREDNICORTONE 5 MG 1 COMP",
+                        "DocumentReference.language": "es-ES",
+                        "DocumentReference.userSelected": "true",
+                        "DocumentReference.docStatus": "preliminary"
+                      }
+                    },
+                    "docStatus": "preliminary"
+                  },
+                  {
+                    "resourceType": "DocumentReference",
+                    "id": "7a74bacb-c2ed-5b37-8f1e-97db69866425",
+                    "meta": {
+                      "claims": {
+                        "DocumentReference.identifier": "7a74bacb-c2ed-5b37-8f1e-97db69866425",
+                        "DocumentReference.subject": "did:web:globaldatacare.es:animal:subject:zW1dU8yZwD3u3pVPF8obc9ZdfxY8EjSPFrXYWHJeutcopcR",
+                        "DocumentReference.author": "",
+                        "DocumentReference.date": "2026-01-27T15:08:12Z",
+                        "DocumentReference.type": "default",
+                        "DocumentReference.category": "http://loinc.org|10160-0",
+                        "DocumentReference.description": "TRATAMIENTO DOXYBACTIN 50MG 1 COMP",
+                        "DocumentReference.language": "es-ES",
+                        "DocumentReference.userSelected": "true",
+                        "DocumentReference.docStatus": "preliminary"
+                      }
+                    },
+                    "docStatus": "preliminary"
+                  }
+                ]
+              }
+            },
+            {
+              "resource": {
+                "resourceType": "Subject",
+                "id": "8538829f-6da4-51ec-8320-fcff61a9ea50",
+                "meta": {
+                  "claims": {
+                    "Subject.id": "did:web:globaldatacare.es:animal:subject:zW1jdGSUFXL6ATRfrhFTu1FZgM9DXBnFtbvg2pgBniri3Qd",
+                    "Subject.active": "true",
+                    "Subject.language": "es-ES",
+                    "Subject.userSelected": "true"
+                  }
+                },
+                "contained": [
+                  {
+                    "resourceType": "Composition",
+                    "id": "c0e6def8-0672-5a54-afcb-baf8a2b451a9",
+                    "meta": {
+                      "claims": {
+                        "Composition.identifier": "c0e6def8-0672-5a54-afcb-baf8a2b451a9",
+                        "Composition.subject": "did:web:globaldatacare.es:animal:subject:zW1jdGSUFXL6ATRfrhFTu1FZgM9DXBnFtbvg2pgBniri3Qd",
+                        "Composition.section": "http://loinc.org|30954-2",
+                        "Composition.author": "",
+                        "Composition.date": "2026-03-22T00:59:38.207051+00:00",
+                        "Composition.type": "http://loinc.org|30954-2",
+                        "Composition.title": "clinica:laboratorio index",
+                        "Composition.entry": "urn:uuid:d7f3ffbc-4511-5d2d-86db-f660f08f06b8,urn:uuid:8a0aa0d8-33bf-5290-a186-56c9c62eae60",
+                        "Composition.userSelected": "true",
+                        "Composition.relatesto-target": "945468ac-eb2d-4a67-85ee-b94bf7566dbd",
+                        "Composition.relatesto-type": "part-of"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "Encounter",
+                    "id": "d7f3ffbc-4511-5d2d-86db-f660f08f06b8",
+                    "meta": {
+                      "claims": {
+                        "Encounter.identifier": "d7f3ffbc-4511-5d2d-86db-f660f08f06b8",
+                        "Encounter.subject": "did:web:globaldatacare.es:animal:subject:zW1jdGSUFXL6ATRfrhFTu1FZgM9DXBnFtbvg2pgBniri3Qd",
+                        "Encounter.date": "2026-01-13T13:18:25Z",
+                        "Encounter.status": "finished",
+                        "Encounter.class": "http://terminology.hl7.org/CodeSystem/v3-ActCode|AMB",
+                        "Encounter.userSelected": "true"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "DocumentReference",
+                    "id": "8a0aa0d8-33bf-5290-a186-56c9c62eae60",
+                    "meta": {
+                      "claims": {
+                        "DocumentReference.identifier": "8a0aa0d8-33bf-5290-a186-56c9c62eae60",
+                        "DocumentReference.subject": "did:web:globaldatacare.es:animal:subject:zW1jdGSUFXL6ATRfrhFTu1FZgM9DXBnFtbvg2pgBniri3Qd",
+                        "DocumentReference.author": "",
+                        "DocumentReference.date": "2026-01-13T13:18:25Z",
+                        "DocumentReference.type": "default",
+                        "DocumentReference.category": "http://loinc.org|30954-2",
+                        "DocumentReference.description": "ANALISIS TEST 2 LEUCE/ INMUNODEF TEST URANO",
+                        "DocumentReference.language": "es-ES",
+                        "DocumentReference.userSelected": "true",
+                        "DocumentReference.docStatus": "preliminary"
+                      }
+                    },
+                    "docStatus": "preliminary"
+                  }
+                ]
+              }
+            },
+            {
+              "resource": {
+                "resourceType": "Subject",
+                "id": "00475e3f-f8eb-5845-aec5-5b2a395cb97b",
+                "meta": {
+                  "claims": {
+                    "Subject.id": "did:web:globaldatacare.es:animal:subject:zW1ngST945akH1xuKT3ivD5KKP8qf9quTaUkGtDw9bJ85cu",
+                    "Subject.active": "true",
+                    "Subject.language": "es-ES",
+                    "Subject.userSelected": "true"
+                  }
+                },
+                "contained": [
+                  {
+                    "resourceType": "Composition",
+                    "id": "604d1547-5b69-5dcc-9c00-6b7a74bfd3f3",
+                    "meta": {
+                      "claims": {
+                        "Composition.identifier": "604d1547-5b69-5dcc-9c00-6b7a74bfd3f3",
+                        "Composition.subject": "did:web:globaldatacare.es:animal:subject:zW1ngST945akH1xuKT3ivD5KKP8qf9quTaUkGtDw9bJ85cu",
+                        "Composition.section": "http://loinc.org|11369-6",
+                        "Composition.author": "",
+                        "Composition.date": "2026-03-22T00:59:38.207093+00:00",
+                        "Composition.type": "http://loinc.org|11369-6",
+                        "Composition.title": "clinica:vacunas index",
+                        "Composition.entry": "urn:uuid:b79fd030-985a-58f6-8f2d-a6cba2f830ae,urn:uuid:d450b32e-7274-5358-a734-46084892a79c",
+                        "Composition.userSelected": "true",
+                        "Composition.relatesto-target": "945468ac-eb2d-4a67-85ee-b94bf7566dbd",
+                        "Composition.relatesto-type": "part-of"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "Encounter",
+                    "id": "b79fd030-985a-58f6-8f2d-a6cba2f830ae",
+                    "meta": {
+                      "claims": {
+                        "Encounter.identifier": "b79fd030-985a-58f6-8f2d-a6cba2f830ae",
+                        "Encounter.subject": "did:web:globaldatacare.es:animal:subject:zW1ngST945akH1xuKT3ivD5KKP8qf9quTaUkGtDw9bJ85cu",
+                        "Encounter.date": "2026-01-15T10:59:50Z",
+                        "Encounter.status": "finished",
+                        "Encounter.class": "http://terminology.hl7.org/CodeSystem/v3-ActCode|AMB",
+                        "Encounter.userSelected": "true"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "DocumentReference",
+                    "id": "d450b32e-7274-5358-a734-46084892a79c",
+                    "meta": {
+                      "claims": {
+                        "DocumentReference.identifier": "d450b32e-7274-5358-a734-46084892a79c",
+                        "DocumentReference.subject": "did:web:globaldatacare.es:animal:subject:zW1ngST945akH1xuKT3ivD5KKP8qf9quTaUkGtDw9bJ85cu",
+                        "DocumentReference.author": "",
+                        "DocumentReference.date": "2026-01-15T10:59:50Z",
+                        "DocumentReference.type": "default",
+                        "DocumentReference.category": "http://loinc.org|11369-6",
+                        "DocumentReference.description": "VACUNA 2 POLIVALENTE GATO RCP TRIVALENTE FEL + LEUCEMIA",
+                        "DocumentReference.language": "es-ES",
+                        "DocumentReference.userSelected": "true",
+                        "DocumentReference.docStatus": "preliminary"
+                      }
+                    },
+                    "docStatus": "preliminary"
+                  }
+                ]
+              }
+            },
+            {
+              "resource": {
+                "resourceType": "Subject",
+                "id": "bc6aef56-6ad6-58b6-aabe-955bfb3ad642",
+                "meta": {
+                  "claims": {
+                    "Subject.id": "did:web:globaldatacare.es:animal:subject:zW1o8E5RrFoKsKyQpJgrxLz4ofSnNdj1Nn2TmSqUmAD3BJD",
+                    "Subject.active": "true",
+                    "Subject.language": "es-ES",
+                    "Subject.userSelected": "true"
+                  }
+                },
+                "contained": [
+                  {
+                    "resourceType": "Composition",
+                    "id": "44bbd380-2f75-540f-96a7-8c584c4f15db",
+                    "meta": {
+                      "claims": {
+                        "Composition.identifier": "44bbd380-2f75-540f-96a7-8c584c4f15db",
+                        "Composition.subject": "did:web:globaldatacare.es:animal:subject:zW1o8E5RrFoKsKyQpJgrxLz4ofSnNdj1Nn2TmSqUmAD3BJD",
+                        "Composition.section": "http://loinc.org|30954-2",
+                        "Composition.author": "",
+                        "Composition.date": "2026-03-22T00:59:38.207130+00:00",
+                        "Composition.type": "http://loinc.org|30954-2",
+                        "Composition.title": "clinica:laboratorio index",
+                        "Composition.entry": "urn:uuid:ebadea43-e482-5a7b-ab2f-9da9c8b17dcb,urn:uuid:45929f12-0ae5-55da-adcf-17d6d2c493f5",
+                        "Composition.userSelected": "true",
+                        "Composition.relatesto-target": "945468ac-eb2d-4a67-85ee-b94bf7566dbd",
+                        "Composition.relatesto-type": "part-of"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "Encounter",
+                    "id": "ebadea43-e482-5a7b-ab2f-9da9c8b17dcb",
+                    "meta": {
+                      "claims": {
+                        "Encounter.identifier": "ebadea43-e482-5a7b-ab2f-9da9c8b17dcb",
+                        "Encounter.subject": "did:web:globaldatacare.es:animal:subject:zW1o8E5RrFoKsKyQpJgrxLz4ofSnNdj1Nn2TmSqUmAD3BJD",
+                        "Encounter.date": "2026-01-10T13:41:05Z",
+                        "Encounter.status": "finished",
+                        "Encounter.class": "http://terminology.hl7.org/CodeSystem/v3-ActCode|AMB",
+                        "Encounter.userSelected": "true"
+                      }
+                    }
+                  },
+                  {
+                    "resourceType": "DocumentReference",
+                    "id": "45929f12-0ae5-55da-adcf-17d6d2c493f5",
+                    "meta": {
+                      "claims": {
+                        "DocumentReference.identifier": "45929f12-0ae5-55da-adcf-17d6d2c493f5",
+                        "DocumentReference.subject": "did:web:globaldatacare.es:animal:subject:zW1o8E5RrFoKsKyQpJgrxLz4ofSnNdj1Nn2TmSqUmAD3BJD",
+                        "DocumentReference.author": "",
+                        "DocumentReference.date": "2026-01-10T13:41:05Z",
+                        "DocumentReference.type": "default",
+                        "DocumentReference.category": "http://loinc.org|30954-2",
+                        "DocumentReference.description": "ANALISIS TEST 4DX VARIOS LABS- LEISH,ERLICHIA,ANAP Y FILARIA",
+                        "DocumentReference.language": "es-ES",
+                        "DocumentReference.userSelected": "true",
+                        "DocumentReference.docStatus": "preliminary"
+                      }
+                    },
+                    "docStatus": "preliminary"
+                  }
+                ]
+              }
+            }
+          ],
+          "total": 4
+        }
+      }
+    ],
+    "total": 1
+  }
+}

@@ -2,14 +2,39 @@
 
 TypeScript SDK for consuming the `adapter-ingestion-py` pre-conversion API.
 
-It includes:
+## Table of contents
 
-- tenant/software configuration creation and polling
+- [DataConv Client SDK for TypeScript](#dataconv-client-sdk-for-typescript)
+  - [Table of contents](#table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+  - [Discover form fields](#discover-form-fields)
+    - [Field selection tracking (UI dedup)](#field-selection-tracking-ui-dedup)
+    - [React example: multi-dropdown dedup](#react-example-multi-dropdown-dedup)
+  - [End-to-end flow](#end-to-end-flow)
+  - [Multipart / local file upload](#multipart--local-file-upload)
+  - [Backend initialization](#backend-initialization)
+  - [CLI](#cli)
+    - [Recommended local setup (no IP/DID flags in commands)](#recommended-local-setup-no-ipdid-flags-in-commands)
+    - [Command helper and endpoint-resolution conventions](#command-helper-and-endpoint-resolution-conventions)
+    - [One-shot evidence script](#one-shot-evidence-script)
+  - [Notes](#notes)
+
+---
+
+## Features
+
+- Discover frontend field descriptors from `/.well-known/api-config.json`
+- Track which fields have already been selected across UI dropdowns
+- Tenant/software configuration creation and polling
 - Excel/XLSX upload via DIDComm attachment or `multipart/form-data`
 - `_upload-response` polling
-- promotion through `Composition/_patch` and `Patient/_batch`
-- tenant-scoped search under `/host/.../org.hl7.fhir.api/{resourceType}/_search`
-- helpers to read the converted `Bundle` and keep the last received response
+- Promotion through `Composition/_patch` and `Patient/_batch`
+- Tenant-scoped dataset search under `/publisher/.../dataset/{resourceType}/_search`
+- Helpers to read the converted `Bundle` and keep the last received response
+
+---
 
 ## Installation
 
@@ -23,11 +48,161 @@ npm install dataconv-client-sdk-ts
 DATACONV_BASE_URL=http://localhost:8080
 ```
 
-## Basic usage
+---
 
-Minimum end-to-end flow:
+## Discover form fields
 
-1. Initialize the client and tokens.
+The client reads the API discovery document published by the server and returns frontend-ready field descriptors.
+
+```ts
+import { DataConvClient } from 'dataconv-client-sdk-ts';
+
+const client = new DataConvClient({
+  issuerDid: 'did:web:clinic.example:employee:loader',
+  tenantId: 'VATES-B00000000',
+  jurisdiction: 'ES',
+  crypto: globalThis.crypto
+});
+
+const apiConfig = await client.getWellKnownApiConfig();
+
+console.log(apiConfig.language); // "es"
+console.log(apiConfig.fields);
+// [
+//   { code: 'section', display: 'Departamento o sección: ...' },
+//   { code: 'coverage_insurer', display: 'Identificador o nombre de la aseguradora' }
+// ]
+```
+
+The returned object includes:
+
+| Property | Type | Description |
+|---|---|---|
+| `language` | `string` | Language code of the API config (`"es"`, ...) |
+| `fields` | `{ code, display }[]` | Ready-to-use options for dropdowns |
+| `supportedFields` | `Record<string, string>` | Raw `code → display` map |
+| `endpoints` | `Record<string, string>` | Endpoint paths for `create`, `upload`, etc. |
+
+The recommended frontend flow is:
+
+1. Read `fields` from `getWellKnownApiConfig()`.
+2. Let the user map spreadsheet columns to those field codes.
+3. Submit `mappingConfig.fieldMap` using those same codes.
+
+---
+
+### Field selection tracking (UI dedup)
+
+The SDK keeps a per-session set of already-selected field codes so the UI can prevent a user from assigning the same field to two different dropdowns.
+
+| Method | Returns | Description |
+|---|---|---|
+| `selectField(code, mappedTo?)` | `boolean` | `true` if added, `false` if already selected |
+| `unselectField(code)` | `boolean` | `true` if removed, `false` if not present |
+| `isFieldSelected(code)` | `boolean` | Whether the code is currently selected |
+| `getSelectedFieldCodes()` | `string[]` | All currently selected codes |
+| `getSelectedFieldMappings()` | `Record<string, string>` | Map of selected field code → mapped source column |
+| `getSelectedMappingForField(code)` | `string \| undefined` | Source column currently associated to the selected code |
+| `clearSelectedFields()` | `void` | Reset selection state |
+
+```ts
+client.selectField('section');          // true
+client.selectField('section');          // false → already selected
+client.selectField('concept', 'CONCEPTO');
+client.getSelectedMappingForField('concept'); // 'CONCEPTO'
+client.isFieldSelected('section');      // true
+client.unselectField('section');        // true
+client.getSelectedFieldCodes();         // []
+```
+
+---
+
+### React example: multi-dropdown dedup
+
+```tsx
+import { useEffect, useMemo, useState } from 'react';
+import { DataConvClient } from 'dataconv-client-sdk-ts';
+
+const client = new DataConvClient({
+  issuerDid: 'did:web:clinic.example:employee:loader',
+  tenantId: 'VATES-B00000000',
+  jurisdiction: 'ES',
+  crypto: globalThis.crypto
+});
+
+type FieldOption = { code: string; display: string };
+
+export function FieldMappingForm() {
+  const [options, setOptions] = useState<FieldOption[]>([]);
+  const [mapping, setMapping] = useState<Record<string, string>>({
+    colA: '',
+    colB: '',
+    colC: ''
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    client.getSupportedFields().then((fields) => {
+      if (mounted) setOptions(fields);
+    });
+    return () => {
+      mounted = false;
+      client.clearSelectedFields();
+    };
+  }, []);
+
+  const selectedSet = useMemo(() => new Set(client.getSelectedFieldCodes()), [mapping]);
+
+  const onChangeField = (columnKey: string, newCode: string) => {
+    const previousCode = mapping[columnKey];
+    if (previousCode) {
+      client.unselectField(previousCode);
+    }
+
+    if (newCode && !client.selectField(newCode, columnKey)) {
+      const mappedTo = client.getSelectedMappingForField(newCode);
+      if (previousCode) {
+        client.selectField(previousCode);
+      }
+      alert(`El campo ${newCode} ya ha sido seleccionado${mappedTo ? ` en ${mappedTo}` : ''}.`);
+      return;
+    }
+
+    setMapping((current) => ({ ...current, [columnKey]: newCode }));
+  };
+
+  return (
+    <>
+      {Object.keys(mapping).map((columnKey) => (
+        <select
+          key={columnKey}
+          value={mapping[columnKey]}
+          onChange={(event) => onChangeField(columnKey, event.target.value)}
+        >
+          <option value="">Selecciona un campo</option>
+          {options.map((field) => {
+            const selectedInAnotherDropdown =
+              selectedSet.has(field.code) && mapping[columnKey] !== field.code;
+            return (
+              <option key={field.code} value={field.code} disabled={selectedInAnotherDropdown}>
+                {field.display}
+              </option>
+            );
+          })}
+        </select>
+      ))}
+    </>
+  );
+}
+```
+
+---
+
+## End-to-end flow
+
+Minimum steps to go from field discovery to promoted resources:
+
+1. Discover fields and initialize the client.
 2. Create the tenant/software configuration.
 3. Wait for `_create-response`.
 4. Upload the Excel file.
@@ -52,8 +227,6 @@ client.setVpToken('<vp_token>');
 
 // 1. Discover frontend field descriptors from the API.
 const apiConfig = await client.getWellKnownApiConfig();
-
-// Example UI options:
 const fieldOptions = apiConfig.fields;
 // [
 //   { code: 'section', display: 'Departamento o sección: ...' },
@@ -135,6 +308,13 @@ const searchResponse = await client.searchResources({
 });
 ```
 
+For DIDComm polling responses, the SDK also exposes:
+
+- `getMainDiagnosticInfoByResponse(response)` — reads `OperationOutcome.issue[0].diagnostics` from a response.
+- `getMainDiagnosticInfo()` — reads it from the last stored config/conversion response.
+
+---
+
 ## Multipart / local file upload
 
 ```ts
@@ -145,209 +325,28 @@ await client.uploadSpreadsheetMultipart({
 });
 ```
 
-## CLI evidence for real upload + polling
-
-The package also exposes a CLI that performs a real upload call, waits for `_upload-response`, saves the full DIDComm response to JSON, and prints the main diagnostic summary.
-
-```bash
-dataconv-client \
-  --service-did did:web:dataconv-api.example.org \
-  --resolved-base-url http://127.0.0.1:8080 \
-  --tenant-id demo-tenant \
-  --software-id api-config \
-  --resource-type Composition \
-  --file ./examples/example-api-config.xlsx \
-  --issuer-did did:web:organization.example.org:employee:loader \
-  --authorization-bearer <token> \
-  --output-json ./artifacts/appmypets-upload-response.json
-```
-
-The CLI prints:
-
-- the exact public upload URL used
-- the Excel path and size in KB
-- the `Location` header returned by `_upload`
-- the `thid`
-- the exact polling URL used
-- the output JSON file path
-- the main diagnostic text from the final DIDComm response
-
-This is useful when you need a reproducible console trace for a justification dossier without pasting the whole JSON response into the report.
-
-When `--service-did` is used, the CLI can resolve it locally by either:
-
-- passing `--resolved-base-url <url>`
-- or defining `DATACONV_SERVICE_DID_MAP` as a JSON object, for example:
-
-```bash
-export DATACONV_SERVICE_DID_MAP='{"did:web:dataconv-api.example.org":"http://127.0.0.1:8080"}'
-```
-
-This keeps public examples neutral while still allowing local or temporary endpoint resolution outside the repository.
-
-## Discover form fields from `/.well-known/api-config.json`
-
-The client can read the API discovery document published by the server and return frontend-ready field descriptors.
-
-```ts
-const apiConfig = await client.getWellKnownApiConfig();
-
-console.log(apiConfig.language); // "es"
-console.log(apiConfig.fields);
-// [
-//   { code: 'section', display: 'Departamento o sección: ...' },
-//   { code: 'coverage_insurer', display: 'Identificador o nombre de la aseguradora' }
-// ]
-
-const supportedFields = await client.getSupportedFields();
-
-// Optional: track selection state for UI dropdown dedup checks.
-if (!client.selectField('section')) {
-  alert('Campo "section" ya seleccionado en otro dropdown');
-}
-if (!client.selectField('section')) {
-  alert('No puedes seleccionar el mismo campo dos veces');
-}
-
-const uploadResponse = await client.uploadSpreadsheetAndWait(
-  'https://example.com/AppMyPets-api-config.xlsx?dl=1',
-  {
-    softwareId: 'api-config',
-    resourceType: 'Composition',
-    fileName: 'AppMyPets-api-config.xlsx'
-  }
-);
-
-const summaryText = client.getMainDiagnosticInfoByResponse(uploadResponse);
-console.log(summaryText);
-```
-
-The returned object includes:
-
-- `language`
-- `supportedFields` as raw `code -> display`
-- `fields` as `{ code, display }[]`
-- `endpoints` for `create`, `createResponse`, `upload`, and `uploadResponse`
-
-For DIDComm polling responses, the SDK also exposes:
-
-- `getMainDiagnosticInfoByResponse(response)` to read the main `OperationOutcome.issue[0].diagnostics`
-- `getMainDiagnosticInfo()` to read it from the last stored config/conversion response
-
-The recommended frontend flow is:
-
-1. Read `fields` from `/.well-known/api-config.json`.
-2. Let the user map spreadsheet columns to those field codes.
-3. Submit `mappingConfig.fieldMap` using those same codes.
-
-### React example: avoid duplicate field selection across dropdowns
-
-```tsx
-import { useEffect, useMemo, useState } from 'react';
-import { DataConvClient } from 'dataconv-client-sdk-ts';
-
-const client = new DataConvClient({
-  issuerDid: 'did:web:clinic.example:employee:loader',
-  tenantId: 'VATES-B00000000',
-  jurisdiction: 'ES',
-  crypto: globalThis.crypto
-});
-
-type FieldOption = { code: string; display: string };
-
-export function FieldMappingForm() {
-  const [options, setOptions] = useState<FieldOption[]>([]);
-  const [mapping, setMapping] = useState<Record<string, string>>({
-    colA: '',
-    colB: '',
-    colC: ''
-  });
-
-  useEffect(() => {
-    let mounted = true;
-    client.getSupportedFields().then((fields) => {
-      if (mounted) setOptions(fields);
-    });
-    return () => {
-      mounted = false;
-      client.clearSelectedFields();
-    };
-  }, []);
-
-  const selectedSet = useMemo(() => new Set(client.getSelectedFieldCodes()), [mapping]);
-
-  const onChangeField = (columnKey: string, newCode: string) => {
-    const previousCode = mapping[columnKey];
-    if (previousCode) {
-      client.unselectField(previousCode);
-    }
-
-    if (newCode && !client.selectField(newCode)) {
-      if (previousCode) {
-        client.selectField(previousCode);
-      }
-      alert(`El campo ${newCode} ya ha sido seleccionado anteriormente.`);
-      return;
-    }
-
-    setMapping((current) => ({ ...current, [columnKey]: newCode }));
-  };
-
-  return (
-    <>
-      {Object.keys(mapping).map((columnKey) => (
-        <select
-          key={columnKey}
-          value={mapping[columnKey]}
-          onChange={(event) => onChangeField(columnKey, event.target.value)}
-        >
-          <option value="">Selecciona un campo</option>
-          {options.map((field) => {
-            const selectedInAnotherDropdown =
-              selectedSet.has(field.code) && mapping[columnKey] !== field.code;
-            return (
-              <option key={field.code} value={field.code} disabled={selectedInAnotherDropdown}>
-                {field.display}
-              </option>
-            );
-          })}
-        </select>
-      ))}
-    </>
-  );
-}
-```
-
-In this pattern:
-
-- `selectField(code)` returns `false` when the code was already used.
-- `unselectField(code)` frees a code when a dropdown changes value.
-- `getSelectedFieldCodes()` helps disable options already selected elsewhere.
+---
 
 ## Backend initialization
 
-If the backend instantiates the SDK after `Organization/_activate`, it can inject `axios` or `fetch` just like `ica-client-sdk-ts`.
+If the backend instantiates the SDK after `Organization/_activate`, it can inject `axios` or `fetch`:
 
 ```ts
 import axios from 'axios';
 import { DataConvClient } from 'dataconv-client-sdk-ts';
 
-const httpClient = axios.create({
-  baseURL: process.env.DATACONV_BASE_URL
-});
-
 const client = new DataConvClient({
   issuerDid: activatedOrganizationDid,
   tenantId: tenantAlternateName,
   jurisdiction: 'ES',
-  httpClient,
+  httpClient: axios.create({ baseURL: process.env.DATACONV_BASE_URL }),
   crypto: globalThis.crypto
 });
 
 client.setVpToken(vpTokenFromActivation);
 ```
 
-It also works with `fetch`:
+Also works with `fetch`:
 
 ```ts
 const client = new DataConvClient({
@@ -359,17 +358,167 @@ const client = new DataConvClient({
 });
 ```
 
+---
+
+## CLI
+
+The package exposes a CLI that can first create mapping config, then upload a file, wait for `_upload-response`, save the full DIDComm response to JSON, and print the main outcome summary.
+
+### Local setup
+
+Copy `.env.example` to `.env.local`, fill in your values, and source it before running commands:
+
+```bash
+cp .env.example .env.local
+# edit .env.local: tenantId, issuerDid, base URL, DATACONV_ID_TOKEN
+source .env.local
+```
+
+The helper script `scripts/evidencia-publicacion.sh` loads `.env.local` automatically (falls back to `.env.example`).
+
+For advanced DID document-based endpoint resolution and full command reference, see [docs/cli-reference.md](docs/cli-reference.md).
+
+```bash
+# 1) login against your IdP (store OIDC id_token locally)
+dataconv login --id-token "$DATACONV_ID_TOKEN"
+
+# 2) exchange Bearer access token
+dataconv exchange --scope "excel/_upload Subject/_search ChargeItem/_search DocumentReference/_search"
+
+# 3) optional tenant-admin step: create a constrained API key
+dataconv api-key-create --email ops@example.com --target "publisher/cds-es/v1/animal-care/vates-a00000001/dataset/*/*/_upload"
+
+# 4) upload + automatic polling
+dataconv upload ./examples/example-api-config.xlsx \
+  --output-json ./artifacts/upload-response.json
+
+# 5) optional: patch/batch after review, then search with Bearer token
+dataconv search --resource-type DocumentReference --params '{"_count": 5}'
+
+# optional alternative to patch
+dataconv batch --thid "<thid-obtenido-de-upload>"
+```
+
+Output includes:
+
+- exact public upload URL used
+- Excel path and size in KB
+- `Location` header from `_upload`
+- `thid`
+- exact polling URL used
+- output JSON file path
+- main `OperationOutcome.issue[0].description` when available (fallback: `diagnostics`)
+
+When `--mapping-json` is provided to `upload`, CLI creates tenant mapping config first and polls `config/_create-response` before submitting the spreadsheet.
+
+The CLI prints evidence-style process logs, for example:
+
+- authentication/exchange against configured dataspace name
+- upload accepted with `thid`
+- automatic `_upload-response` polling
+- final summary and JSON artifact path
+
+### Command helper and endpoint-resolution conventions
+
+Use per-command help to see expected conventions:
+
+```bash
+dataconv help exchange
+dataconv help upload
+dataconv search --help
+```
+
+Service IDs used as CLI resolution metadata:
+
+- `exchange`: `#identity:openid:token:_exchange`
+- `upload` (update): `#dataset:{softwareId}:{resourceType}:_upload`
+- `patch` (publish): `#dataset:{softwareId}:{resourceType}:_patch`
+- `batch` (publish): `#dataset:{softwareId}:{resourceType}:_batch`
+- `search`: `#dataset:api:{resourceType}:_search`
+
+Fallback env vars for localhost testing:
+
+- `PUBLISHER_OPENID_EXCHANGE`
+- `PUBLISHER_DATASET_UPDATE`
+- `PUBLISHER_DATASET_PATCH`
+- `PUBLISHER_DATASET_BATCH`
+- `PUBLISHER_DATASET_SEARCH`
+
+Important contract note:
+
+- `--organization-did` and `--service-id` are stored as CLI-side endpoint-resolution context.
+- The `/exchange` request body remains OpenAPI-compatible (no extra payload fields derived from service-id/fallback metadata).
+
+### One-shot evidence script
+
+Use the included helper to run login/exchange/upload/search in one shot:
+
+```bash
+chmod +x ./scripts/publish-dataset.sh
+./scripts/evidencia-publicacion.sh
+
+# opcional: forzar mapping JSON externo + promoción por batch
+DATACONV_PUBLICACION_MAPPING_JSON=./examples/mappings/qvet-v1.json \
+DATACONV_PUBLICACION_HEADER_ROW_INDEX=1 \
+DATACONV_PROMOTION_MODE=batch \
+./scripts/evidencia-publicacion.sh
+```
+
+Generated files:
+
+- `./artifacts/datasets/upload-response.json`
+- `./artifacts/datasets/search-subject.json`
+- `./artifacts/datasets/search-documentreference.json`
+- `./artifacts/datasets/dcat-files.json`
+
+Notes on scope model and flow:
+
+- You can request endpoint-action scopes (recommended for evaluator logs), e.g. `excel/_upload` or `DocumentReference/_search`.
+- Backend accepts these action scopes as equivalent to coarse scopes (`dataconv.upload` / `dataconv.read`).
+- `tenantId`, `jurisdiction`, `sector`, and `softwareId` are taken from env/profile defaults (recommended tenant format: `VATES-<NIF>`).
+- API keys do **not** mint `id_token`s. The `id_token` always comes from the external IdP/login step.
+- API keys are used at `/exchange` time to constrain or delegate scopes. The resulting Bearer `access_token` is what you use for config, upload, patch/batch, and search.
+- For explicit exceptional non-confidential mode, send `api_key_profile=api-key-exception.v1` in `/exchange` payload (server must allow it).
+- Recommended API key authorization model is atomic:
+  - one rule entry (`data[].resource`) = one consent-like authorization rule = one ODRL policy object.
+  - include `scope` (mandatory), and preferably `target` + `instrument` (ODRL).
+
+When `--service-did` is used, resolve it locally with either `--resolved-base-url` or the `DATACONV_SERVICE_DID_MAP` env variable:
+
+```bash
+export DATACONV_SERVICE_DID_MAP='{"did:web:dataconv-api.example.org":"http://127.0.0.1:8080"}'
+```
+
+> **DEMO_MODE** — If the backend runs with `DEMO_MODE=true`, generate a test `id_token` without a real IdP:
+>
+> ```bash
+> # genera un id_token demo (alg:none, solo requiere campo email en el payload)
+> export DATACONV_ID_TOKEN=$(node -e '
+> const h = Buffer.from(JSON.stringify({alg:"none",typ:"JWT"})).toString("base64url");
+> const p = Buffer.from(JSON.stringify({email:"admin@example.com"})).toString("base64url");
+> console.log(`${h}.${p}.`);
+> ')
+> # eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIn0.
+> ```
+>
+> Use the token with `--authorization-bearer "$DATACONV_ID_TOKEN"`. No signature verification is performed in demo mode; only the `email` claim is required.
+
+---
+
 ## Notes
 
-- For configuration and conversion calls, the operational tenant identifier should be `tenantId`, typically the organization's VAT/taxId.
-- `sector` is variable and is part of the public route for config, digital twin, and search.
+- `tenantId` is the operational tenant identifier, typically the organization's VAT/taxId.
+- `sector` is part of the public route for publisher config, dataset publication, and dataset search.
 - `patchConversion()` defaults to `Composition/_patch`.
 - `batchPromotion()` defaults to `Patient/_batch`.
-- `searchResources()` resolves to `/host/cds-{jurisdiction}/v1/{sector}/{tenantId}/org.hl7.fhir.api/{resourceType}/_search`.
-- Parameter names sent by `searchResources()` are lowercase. Example: `userselected`, `date`.
-- Even if the caller passes `userSelected`, the SDK normalizes it to `userselected` before sending the body.
-- In `_search`, the current comparators are prefixed in the value: `ge2026-01-01`, `gt...`, `le...`, `lt...`.
-- The pre-conversion service can already require `vp_token` and/or `id_token` depending on `PRECONV_AUTH_MODE`, although it does not yet validate signatures or the full session exchange in `adapter-ingestion-py`.
-- The current backend still rejects `source_format=csv`; the SDK models it because the route exists, but real support today is Excel/XLSX.
-- `gdc-common-utils-ts` is consumed from npm; this SDK adds the concrete pre-conversion types on top of those DIDComm helpers.
-- ICA VCs and `controller.publicKeyJwk` belong to the backend onboarding/`_activate` flow. `DataConvClient` is instantiated afterwards, once the tenant is already activated and only pre-conversion calls are needed.
+- `searchResources()` resolves to `/publisher/cds-{jurisdiction}/v1/{sector}/{tenantId}/dataset/{resourceType}/_search`.
+- Search parameter names are normalized to lowercase (`userSelected` → `userselected`).
+- Search comparators are prefixed in the value: `ge2026-01-01`, `gt...`, `le...`, `lt...`.
+- The backend may require `vp_token` and/or `id_token` depending on `PRECONV_AUTH_MODE`.
+- CSV upload is modeled in the SDK but the current backend only accepts Excel/XLSX.
+- `gdc-common-utils-ts` is an npm dependency; this SDK adds concrete pre-conversion types on top of those DIDComm helpers.
+- ICA VCs and `controller.publicKeyJwk` belong to the `_activate` onboarding flow. `DataConvClient` is used afterwards, once the tenant is already activated.
+
+## Roadmap and Briefing
+- `BRIEFING_DATASPACE_EN.md`
+- `TODO_ROADMAP.md`
