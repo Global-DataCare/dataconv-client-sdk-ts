@@ -161,6 +161,39 @@ export interface DataConvClientConfig {
   crypto?: DataConvCrypto;
 }
 
+export interface DataConvOrganizationTenantActivationOptions {
+  tenantId?: string;
+  alternateName?: string;
+  jurisdiction?: string;
+  sector?: string;
+  idToken: string;
+  vpToken: string;
+}
+
+export interface DataConvOrganizationTenantActivationResult {
+  active: boolean;
+  tenantId: string;
+  networkKind: string;
+  jurisdiction: string;
+  sector: string;
+  controller?: string;
+  credentialIds?: string[];
+  revision?: number;
+}
+
+export interface DataConvResearchFieldMapping {
+  serverField: string;
+  sourceField: string;
+}
+
+export interface DataConvResearchWorkbookInspection {
+  mode: 'embedded-api-config' | 'manual-mapping';
+  apiConfig?: string;
+  sourceFields: string[];
+  mappings: DataConvResearchFieldMapping[];
+  dataHeaderRowIndex: number;
+}
+
 export interface CreateTenantConfigOptions<TFieldMap = FieldsGenericCare> {
   alternateName?: string;
   tenantId?: string;

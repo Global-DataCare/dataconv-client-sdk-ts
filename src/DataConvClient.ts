@@ -38,6 +38,8 @@ import type {
   DataConvExchangeTokenResult,
   DataConvMultipartUploadOptions,
   DataConvOperationOutcome,
+  DataConvOrganizationTenantActivationOptions,
+  DataConvOrganizationTenantActivationResult,
   DataConvPatchOptions,
   DataConvPatchResponse,
   DataConvSearchBundle,
@@ -86,6 +88,27 @@ export class DataConvClient {
 
   setVpToken(vpToken: string): void {
     this.vpToken = vpToken;
+  }
+
+  async activateOrganizationTenant(
+    options: DataConvOrganizationTenantActivationOptions
+  ): Promise<DataConvOrganizationTenantActivationResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/organization/tenant/_activate`,
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        id_token: requireText(options.idToken, 'idToken'),
+        vp_token: requireText(options.vpToken, 'vpToken')
+      }
+    });
+    if (response.status !== 200) {
+      throw new Error(`Unexpected activateOrganizationTenant response status: ${response.status}`);
+    }
+    return response.data as DataConvOrganizationTenantActivationResult;
   }
 
   getLastTenantConfigResponse(): DataConvDidCommResponse<TenantAdapterConfigResource> | undefined {

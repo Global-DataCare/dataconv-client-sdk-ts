@@ -1,3 +1,5 @@
+// Flow contract: the DataConv TypeScript SDK keeps tenant identity, scope and controller proof explicit in every high-level operation.
+
 import axios from 'axios';
 import { DataConvClient } from '../DataConvClient';
 import type {
@@ -56,6 +58,35 @@ describe('DataConvClient', () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+  });
+
+  it('activates an organization tenant with OIDC and ICA controller proof', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        active: true,
+        tenantId: '7654321',
+        networkKind: 'test-network',
+        jurisdiction: 'CA-BC',
+        sector: 'animal-research'
+      }
+    });
+
+    const result = await client.activateOrganizationTenant({
+      tenantId: '7654321',
+      jurisdiction: 'CA-BC',
+      sector: 'animal-research',
+      idToken: 'signed-id-token',
+      vpToken: 'signed-controller-vp'
+    });
+
+    expect(result.active).toBe(true);
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/publisher/cds-CA-BC/v1/animal-research/7654321/organization/tenant/_activate',
+      data: { id_token: 'signed-id-token', vp_token: 'signed-controller-vp' }
+    }));
   });
 
   it('creates tenant config requests', async () => {
