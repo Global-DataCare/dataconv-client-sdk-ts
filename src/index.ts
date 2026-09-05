@@ -28,6 +28,10 @@ export type {
   DataConvMultipartUploadOptions,
   DataConvOperationOutcome,
   DataConvOperationOutcomeIssue,
+  DataConvOrganizationTenantActivationOptions,
+  DataConvOrganizationTenantActivationResult,
+  DataConvResearchFieldMapping,
+  DataConvResearchWorkbookInspection,
   DataConvPatchOptions,
   DataConvPatchResponse,
   DataConvSearchBundle,
@@ -44,6 +48,7 @@ export type {
   TenantAdapterConfigResource,
   DataConvMappingConfig
 } from './types.js';
+export { availableResearchSourceFields, inspectResearchWorkbook } from './workbook-inspection.js';
 export {
   SubjectFieldKeys,
   ProductFieldKeys,
