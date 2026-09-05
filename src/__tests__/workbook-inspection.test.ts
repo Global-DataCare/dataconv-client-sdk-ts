@@ -1,12 +1,10 @@
 // Flow contract: research import detects embedded API-CONFIG mappings or exposes unique source columns for explicit field-by-field mapping.
 
-import * as xlsx from 'xlsx';
 import { availableResearchSourceFields, inspectResearchWorkbook } from '../workbook-inspection';
+import { buildXlsxWorkbook } from '../xlsx-codec';
 
 function workbookBytes(rows: unknown[][]): Uint8Array {
-  const workbook = xlsx.utils.book_new();
-  xlsx.utils.book_append_sheet(workbook, xlsx.utils.aoa_to_sheet(rows), 'Research');
-  return xlsx.write(workbook, { type: 'array', bookType: 'xlsx' });
+  return buildXlsxWorkbook([{ name: 'Research', rows }]);
 }
 
 it('reads API-CONFIG from cell A1 and pairs row two server fields with row three source fields', () => {

@@ -1,4 +1,4 @@
-import * as xlsx from 'xlsx';
+import { readXlsxWorkbook } from './xlsx-codec.js';
 import type {
   DataConvResearchFieldMapping,
   DataConvResearchWorkbookInspection
@@ -9,14 +9,9 @@ function cells(row: unknown[] | undefined): string[] {
 }
 
 export function inspectResearchWorkbook(bytes: Uint8Array): DataConvResearchWorkbookInspection {
-  const workbook = xlsx.read(bytes, { type: 'array' });
-  const firstSheetName = workbook.SheetNames[0];
-  if (!firstSheetName) throw new Error('Research workbook does not contain a worksheet');
-  const rows = xlsx.utils.sheet_to_json<unknown[]>(workbook.Sheets[firstSheetName], {
-    header: 1,
-    raw: false,
-    defval: ''
-  });
+  const firstSheet = readXlsxWorkbook(bytes)[0];
+  if (!firstSheet) throw new Error('Research workbook does not contain a worksheet');
+  const rows = firstSheet.rows;
   const firstRow = cells(rows[0]);
   const apiConfig = firstRow[0] || '';
   if (apiConfig.toUpperCase().startsWith('API-CONFIG')) {
