@@ -89,6 +89,19 @@ describe('DataConvClient', () => {
     }));
   });
 
+  it('preserves the server detail when organization tenant activation is rejected', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 401,
+      headers: {},
+      data: { detail: 'Controller VP aud does not authorize this service.' }
+    });
+
+    await expect(client.activateOrganizationTenant({
+      idToken: 'signed-id-token',
+      vpToken: 'signed-controller-vp'
+    })).rejects.toThrow('Controller VP aud does not authorize this service.');
+  });
+
   it('creates tenant config requests', async () => {
     mockedAxios.request.mockResolvedValueOnce({
       status: 202,

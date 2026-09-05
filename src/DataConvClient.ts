@@ -106,7 +106,9 @@ export class DataConvClient {
       }
     });
     if (response.status !== 200) {
-      throw new Error(`Unexpected activateOrganizationTenant response status: ${response.status}`);
+      const data = response.data as Record<string, unknown> | undefined;
+      const detail = String(data?.detail || data?.error || '').trim();
+      throw new Error(detail || `Unexpected activateOrganizationTenant response status: ${response.status}`);
     }
     return response.data as DataConvOrganizationTenantActivationResult;
   }
