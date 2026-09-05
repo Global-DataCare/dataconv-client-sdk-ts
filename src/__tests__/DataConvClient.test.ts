@@ -93,7 +93,9 @@ describe('DataConvClient', () => {
     mockedAxios.request.mockResolvedValueOnce({
       status: 401,
       headers: {},
-      data: { detail: 'Controller VP aud does not authorize this service.' }
+      data: {
+        body: { issues: { issue: [{ diagnostics: 'Controller VP aud does not authorize this service.' }] } }
+      }
     });
 
     await expect(client.activateOrganizationTenant({

@@ -107,7 +107,12 @@ export class DataConvClient {
     });
     if (response.status !== 200) {
       const data = response.data as Record<string, unknown> | undefined;
-      const detail = String(data?.detail || data?.error || '').trim();
+      const detail = String(
+        data?.detail
+        || data?.error
+        || this.getMainDiagnosticInfoByResponse(response.data as DataConvDidCommResponse)
+        || ''
+      ).trim();
       throw new Error(detail || `Unexpected activateOrganizationTenant response status: ${response.status}`);
     }
     return response.data as DataConvOrganizationTenantActivationResult;
