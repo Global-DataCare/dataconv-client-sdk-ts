@@ -1,8 +1,10 @@
+// Flow contract: generated XLSX templates remain interoperable and preserve every canonical mapping field without vulnerable SheetJS runtime code.
+
 import * as fs from 'fs';
 import * as path from 'path';
-import * as xlsx from 'xlsx';
 import { generateTemplateExcel, getExcelTemplateData } from '../client/excel-generator';
 import { SubjectFieldKeys, ProductFieldKeys } from '../field-maps';
+import { readXlsxWorkbook } from '../xlsx-codec';
 
 describe('Excel Template Generator', () => {
   const outputDir = path.join(__dirname, '..', '..', 'tmp');
@@ -38,26 +40,21 @@ describe('Excel Template Generator', () => {
     expect(fs.existsSync(outputPath)).toBe(true);
 
     // Leer el archivo generado y comprobar su estructura
-    const workbook = xlsx.readFile(outputPath);
+    const workbook = readXlsxWorkbook(new Uint8Array(fs.readFileSync(outputPath)));
 
     // Verificar las hojas
-    expect(workbook.SheetNames).toContain('Subject');
-    expect(workbook.SheetNames).toContain('Product');
-    expect(workbook.SheetNames).toContain('Invoice');
-    expect(workbook.SheetNames).toContain('Document');
+    expect(workbook.map((sheet) => sheet.name)).toEqual(['Subject', 'Product', 'Invoice', 'Document']);
 
     // Verificar el contenido de una de las hojas
-    const subjectSheet = workbook.Sheets['Subject'];
-    const subjectData = xlsx.utils.sheet_to_json(subjectSheet) as any[];
+    const subjectData = workbook.find((sheet) => sheet.name === 'Subject')!.rows;
 
-    expect(subjectData.length).toBe(SubjectFieldKeys.length);
-    expect(subjectData[0]).toHaveProperty('Parámetro Técnico', 'subject-id');
-    expect(subjectData[0]).toHaveProperty('Descripción');
-    // xlsx retiene el string vacío si la generamos así
-    expect(subjectData[0]['Mapeo Cliente (Ej. Excel origen)']).toBe('');
+    expect(subjectData.length).toBe(SubjectFieldKeys.length + 1);
+    expect(subjectData[0]).toEqual(['Parámetro Técnico', 'Mapeo Cliente (Ej. Excel origen)', 'Descripción']);
+    expect(subjectData[1][0]).toBe('subject-id');
+    expect(subjectData[1][1]).toBe('');
+    expect(subjectData[1][2]).toBeTruthy();
 
-    const productSheet = workbook.Sheets['Product'];
-    const productData = xlsx.utils.sheet_to_json(productSheet) as any[];
-    expect(productData.length).toBe(ProductFieldKeys.length);
+    const productData = workbook.find((sheet) => sheet.name === 'Product')!.rows;
+    expect(productData.length).toBe(ProductFieldKeys.length + 1);
   });
 });

@@ -1,6 +1,8 @@
 # DataConv Client SDK for TypeScript
 
-TypeScript SDK for consuming the `adapter-ingestion-py` pre-conversion API.
+DataConv TypeScript SDK for consuming the `adapter-ingestion-py`
+pre-conversion API. It is distinct from the GDC, VetChain and GW SDKs and does
+not depend on React or React Native.
 
 ## Table of contents
 

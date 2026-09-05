@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.4.2 - 2026-09-04
+
+- Replaced the vulnerable SheetJS npm runtime with a dependency-light XLSX
+  codec for synchronous template generation and research workbook inspection.
+- Updated Axios and removed unused React and React Native peer dependencies;
+  the production dependency audit is now clean.
+
 ## 0.4.1 - 2026-09-04
 
 - Added the high-level organization tenant activation call for portal OIDC and
