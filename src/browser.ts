@@ -1,0 +1,102 @@
+export { DataConvClient } from './DataConvClient.js';
+export { DidCommMessage, DidCommAttachment } from 'gdc-common-utils-ts/utils/didcomm';
+export type {
+  ConversionResultEntry,
+  ConvertedBundleResource,
+  CreateTenantConfigEntry,
+  CreateTenantConfigOptions,
+  DataConvClientConfig,
+  DataConvConversionPollOptions,
+  DataConvCreateResult,
+  DataConvCrypto,
+  DataConvDidCommAttachment,
+  DataConvDidCommAttachmentData,
+  DataConvDidCommAttachmentPayload,
+  DataConvDidCommRequest,
+  DataConvDidCommResponse,
+  DataConvApiKeyAction,
+  DataConvApiKeyActionAgent,
+  DataConvApiKeyActionEntry,
+  DataConvApiKeyCreateActionsOptions,
+  DataConvApiKeyCreateActionsResult,
+  DataConvApiKeyLifecycleOptions,
+  DataConvApiKeyLifecycleResult,
+  DataConvApiKeyResponseEntry,
+  DataConvApiKeyResource,
+  DataConvExchangeTokenOptions,
+  DataConvExchangeTokenResult,
+  DataConvMultipartUploadOptions,
+  DataConvOperationOutcome,
+  DataConvOperationOutcomeIssue,
+  DataConvOrganizationTenantActivationOptions,
+  DataConvOrganizationTenantActivationResult,
+  DataConvResearchFieldMapping,
+  DataConvResearchWorkbookInspection,
+  DataConvPatchOptions,
+  DataConvPatchResponse,
+  DataConvSearchBundle,
+  DataConvSearchBundleEntry,
+  DataConvSearchOptions,
+  DataConvSupportedField,
+  DataConvTenantConfigPollOptions,
+  DataConvUploadDidCommOptions,
+  DataConvUploadResult,
+  DataConvWellKnownApiConfig,
+  SourceFormat,
+  TenantAdapterConfigContent,
+  TenantAdapterConfigEntry,
+  TenantAdapterConfigResource,
+  DataConvMappingConfig
+} from './types.js';
+export { availableResearchSourceFields, inspectResearchWorkbook } from './workbook-inspection.js';
+export {
+  SubjectFieldKeys,
+  ProductFieldKeys,
+  InvoiceFieldKeys,
+  DocumentReferenceFieldKeys,
+  DataLocalFieldKeys,
+} from './field-maps.js';
+export type {
+  SubjectFieldKey,
+  ProductFieldKey,
+  InvoiceFieldKey,
+  DocumentReferenceFieldKey,
+  DataLocalFieldKey,
+  DataConvFieldMapBase,
+  FieldsGenericCare,
+  FieldsHealthCare,
+  FieldsAnimalCare
+} from './field-maps.js';
+export {
+  prepareDidCommRequest,
+  includeVpTokenInMessage,
+  includeFileInMessage,
+  getThidFromMessage,
+  getDataResults
+} from 'gdc-common-utils-ts/utils/didcomm';
+export { DataLocalSearchClaims } from './claims.js';
+export type { DataLocalSearchClaim } from './claims.js';
+export {
+  GlobalSearchClaims,
+  PersonalSearchClaims,
+  SubjectSearchClaims,
+  AppointmentSearchClaims,
+  EncounterSearchClaims,
+  ChargeitemSearchClaims,
+  CoverageSearchClaims,
+  LocationSearchClaims,
+  ObservationSearchClaims,
+  ProcedureSearchClaims,
+} from './claims.js';
+export type {
+  GlobalSearchClaim,
+  PersonalSearchClaim,
+  SubjectSearchClaim,
+  AppointmentSearchClaim,
+  EncounterSearchClaim,
+  ChargeitemSearchClaim,
+  CoverageSearchClaim,
+  LocationSearchClaim,
+  ObservationSearchClaim,
+  ProcedureSearchClaim,
+} from './claims.js';
