@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.4.3 - 2026-09-05
+
+- Added a browser-conditioned package entry so workbook inspection and field
+  mappings do not pull the Node-only Excel template writer into web bundles.
+
 ## 0.4.2 - 2026-09-04
 
 - Replaced the vulnerable SheetJS npm runtime with a dependency-light XLSX
