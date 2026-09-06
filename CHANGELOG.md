@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.4.5 - 2026-09-06
+
+- Added a typed RFC 8693 exchange for a GW-issued, ResearchStudy-scoped SMART
+  access token. The dedicated profile never sends an ICA VP or client
+  assertion, verifies the signed study returned by DataConv and returns the
+  same stable FHIR ResearchStudy reference for upload, polling and review.
+- Kept the existing OIDC exchange contract unchanged: it continues to require
+  both controller VP and client assertion proofs.
+
+## 0.4.4 - 2026-09-06
+
 - Added a typed FHIR `ResearchStudy` reference to upload, upload-response poll,
   patch and batch options. The SDK carries the same reference through the
   conversion lifecycle as correlation context; it does not treat it as an

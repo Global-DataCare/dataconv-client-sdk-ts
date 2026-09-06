@@ -1,4 +1,4 @@
-// Flow contract: the DataConv TypeScript SDK keeps tenant identity, scope and controller proof explicit in every high-level operation.
+// Flow contract: reuse shared test fixtures and canonical types; do not introduce duplicated literals.
 
 import axios from 'axios';
 import { DataConvClient } from '../DataConvClient';
@@ -830,6 +830,69 @@ describe('DataConvClient', () => {
         'X-API-Key': 'demo-api-key'
       })
     }));
+  });
+
+  it('exchanges a study-scoped SMART access token without OIDC controller proofs', async () => {
+    const researchStudy = { reference: 'ResearchStudy/study-2026-01' } as const;
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        access_token: 'dataconv-study-token',
+        issued_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+        token_type: 'Bearer',
+        expires_in: 900,
+        scope: 'dataconv.upload dataconv.read dataconv.review',
+        subject: 'PractitionerRole/professional-1',
+        organization: 'Organization/clinic-demo',
+        study: researchStudy.reference
+      }
+    });
+
+    const result = await client.exchangeResearchStudySmartToken({
+      tenantId: 'clinic-demo',
+      jurisdiction: 'CA-BC',
+      sector: 'animal-research',
+      subjectToken: 'gw-study-smart-token',
+      subjectTokenType: 'urn:ietf:params:oauth:token-type:access_token',
+      researchStudy
+    });
+
+    expect(result.researchStudy).toBe(researchStudy);
+    expect(result.study).toBe(researchStudy.reference);
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/publisher/cds-CA-BC/v1/animal-research/clinic-demo/professional/research/auth/_exchange',
+      data: {
+        subject_token: 'gw-study-smart-token',
+        subject_token_type: 'urn:ietf:params:oauth:token-type:access_token'
+      }
+    }));
+  });
+
+  it('rejects a mismatched study returned by the SMART exchange boundary', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        access_token: 'dataconv-study-token',
+        issued_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+        token_type: 'Bearer',
+        expires_in: 900,
+        study: 'ResearchStudy/a-different-study'
+      }
+    });
+
+    await expect(client.exchangeResearchStudySmartToken({
+      subjectToken: 'gw-study-smart-token',
+      researchStudy: { reference: 'ResearchStudy/study-2026-01' }
+    })).rejects.toThrow('ResearchStudy returned by DataConv does not match the requested ResearchStudy');
+  });
+
+  it('keeps OIDC exchange proof requirements unchanged', async () => {
+    await expect(client.exchangeToken({
+      subjectToken: 'id-token-1'
+    } as never)).rejects.toThrow('vpToken is required');
   });
 
   it('creates tenant API key actions using schema action endpoint', async () => {
