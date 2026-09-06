@@ -383,12 +383,85 @@ export interface DataConvPatchOptions {
   idToken?: string;
   vpToken?: string;
   authorizationToken?: string;
+  /**
+   * Human coding decisions accepted by DataConv's promotion endpoint.
+   * Unconfirmed AI candidates remain outside authoritative flat claims.
+   */
+  body?: DataConvPromotionBody;
+}
+
+export interface DataConvCodingCandidate {
+  id: string;
+  system: string;
+  code: string;
+  display: string;
+  source?: string;
+  recommendationPercent?: number;
+  evidence?: string;
+}
+
+export type DataConvCodingProposalStatus = 'proposed' | 'accepted';
+
+export interface DataConvCodingProposal {
+  id: string;
+  status: DataConvCodingProposalStatus;
+  field: string;
+  inputText: string;
+  rowContext: Record<string, string>;
+  candidates: DataConvCodingCandidate[];
+  selectedCandidateId?: string;
+  reviewedAt?: string;
+}
+
+/** Exact human-selection shape consumed by `body.codingReviews[]`. */
+export interface DataConvCodingReview {
+  resourceType: string;
+  resourceId: string;
+  proposalId: string;
+  selectedCandidateId: string;
+  reason?: string;
+}
+
+export interface DataConvPromotionBody extends Record<string, unknown> {
+  codingReviews?: DataConvCodingReview[];
+}
+
+export type DataConvReviewDraftState = 'draft' | 'promoted' | 'unknown';
+
+/** One UI review row derived from one server `meta.codingProposals[]` item. */
+export interface DataConvCodingReviewRow extends DataConvCodingProposal {
+  subjectResourceType: string;
+  subjectId: string;
+  resourceType: string;
+  resourceId: string;
+  proposalId: string;
+  state: DataConvCodingProposalStatus;
+  draftState: DataConvReviewDraftState;
+}
+
+export interface DataConvCodingReviewPageOptions {
+  /** One-based page number. */
+  page?: number;
+  /** Bounded to 1..100 because upload-response currently returns one full Bundle. */
+  pageSize?: number;
+}
+
+export interface DataConvCodingReviewPage {
+  items: DataConvCodingReviewRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }
 
 export interface DataConvPatchResponseBody {
   status?: string;
   promotedCount?: number;
   message?: string;
+  issues?: DataConvOperationOutcome;
+  data?: Array<TenantAdapterConfigEntry<Record<string, unknown>>>;
   [key: string]: unknown;
 }
 

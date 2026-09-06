@@ -18,6 +18,7 @@ import {
   sleep
 } from './client/helpers.js';
 import { buildAttachment, buildEnvelope, buildMultipartFormData, buildUploadExtra } from './client/message.js';
+import { codingReviewPage } from './coding-review.js';
 import type {
   DataConvBatchOptions,
   ConversionResultEntry,
@@ -25,6 +26,8 @@ import type {
   CreateTenantConfigOptions,
   DataConvClientConfig,
   DataConvConversionPollOptions,
+  DataConvCodingReviewPage,
+  DataConvCodingReviewPageOptions,
   DataConvCreateResult,
   DataConvCrypto,
   DataConvDidCommAttachment,
@@ -254,6 +257,13 @@ export class DataConvClient {
     response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse
   ): ConvertedBundleResource | undefined {
     return this.getConversionEntry(response)?.resource;
+  }
+
+  getCodingReviewPage(
+    response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse,
+    options: DataConvCodingReviewPageOptions = {}
+  ): DataConvCodingReviewPage {
+    return codingReviewPage(response, options);
   }
 
   getResponseIssues<TResource>(
@@ -723,7 +733,8 @@ export class DataConvClient {
         iat: options.iat,
         exp: options.exp,
         idToken: options.idToken,
-        vpToken: options.vpToken
+        vpToken: options.vpToken,
+        body: options.body
       }, this.messageDeps())
     });
 
