@@ -355,6 +355,31 @@ const patchResponse = await client.patchConversion({
 });
 ```
 
+For a study-scoped import, pass the same literal FHIR reference during upload,
+polling and correction. DataConv validates this correlation independently from
+the caller's authorization:
+
+```ts
+const researchStudy = { reference: 'ResearchStudy/study-2026-01' };
+
+await client.uploadSpreadsheetMultipart({
+  fileBytes,
+  softwareId: 'api-config',
+  researchStudy
+});
+await client.pollUploadResponse({
+  softwareId: 'api-config',
+  thid,
+  researchStudy
+});
+await client.patchConversion({
+  softwareId: 'api-config',
+  thid,
+  researchStudy,
+  body: { codingReviews }
+});
+```
+
 Only `body.codingReviews[]` is currently accepted for terminology corrections:
 each decision selects one candidate already belonging to the proposal. The
 server rejects unknown resources, proposals or candidates, materializes only

@@ -577,7 +577,10 @@ export class DataConvClient {
       exp: options.exp,
       idToken: options.idToken,
       vpToken: options.vpToken,
-      body: options.body ?? DEFAULT_UPLOAD_BODY,
+      body: {
+        ...(options.body ?? DEFAULT_UPLOAD_BODY),
+        ...(options.researchStudy ? { researchStudy: options.researchStudy } : {})
+      },
       attachments: [buildAttachment(source, options, this.cryptoApi)],
       extra: buildUploadExtra(options, this.config)
     }, this.messageDeps());
@@ -681,7 +684,8 @@ export class DataConvClient {
           iat: options.iat,
           exp: options.exp,
           idToken: options.idToken,
-          vpToken: options.vpToken
+          vpToken: options.vpToken,
+          extra: options.researchStudy ? { researchStudy: options.researchStudy } : undefined
         }, this.messageDeps())
       }),
       `Failed polling conversion response after ${this.retryTimes} attempts`
@@ -707,7 +711,9 @@ export class DataConvClient {
       iss: options.iss,
       type: options.type,
       idToken: options.idToken,
-      vpToken: options.vpToken
+      vpToken: options.vpToken,
+      authorizationToken: options.authorizationToken,
+      researchStudy: options.researchStudy
     });
   }
 
@@ -734,7 +740,10 @@ export class DataConvClient {
         exp: options.exp,
         idToken: options.idToken,
         vpToken: options.vpToken,
-        body: options.body
+        body: {
+          ...(options.body ?? {}),
+          ...(options.researchStudy ? { researchStudy: options.researchStudy } : {})
+        }
       }, this.messageDeps())
     });
 
@@ -767,7 +776,8 @@ export class DataConvClient {
         iat: options.iat,
         exp: options.exp,
         idToken: options.idToken,
-        vpToken: options.vpToken
+        vpToken: options.vpToken,
+        body: options.researchStudy ? { researchStudy: options.researchStudy } : undefined
       }, this.messageDeps())
     });
 

@@ -34,7 +34,7 @@ export function buildAttachment(
 }
 
 export function buildUploadExtra(
-  options: Pick<DataConvUploadDidCommOptions, 'mode' | 'send' | 'inlineConfig' | 'softwareVersion' | 'sourceFormat'>,
+  options: Pick<DataConvUploadDidCommOptions, 'mode' | 'send' | 'inlineConfig' | 'softwareVersion' | 'sourceFormat' | 'researchStudy'>,
   config: DataConvClientConfig
 ): Record<string, unknown> {
   const extra: Record<string, unknown> = {};
@@ -53,6 +53,9 @@ export function buildUploadExtra(
   }
   if (options.inlineConfig && typeof options.inlineConfig === 'object') {
     extra.inlineConfig = options.inlineConfig;
+  }
+  if (options.researchStudy) {
+    extra.researchStudy = options.researchStudy;
   }
   return extra;
 }

@@ -34,6 +34,7 @@ export type {
   DataConvApiKeyResource,
   DataConvExchangeTokenOptions,
   DataConvExchangeTokenResult,
+  DataConvFhirReference,
   DataConvMultipartUploadOptions,
   DataConvOperationOutcome,
   DataConvOperationOutcomeIssue,

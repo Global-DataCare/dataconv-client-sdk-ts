@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a typed FHIR `ResearchStudy` reference to upload, upload-response poll,
+  patch and batch options. The SDK carries the same reference through the
+  conversion lifecycle as correlation context; it does not treat it as an
+  authorization grant.
 - Added the typed `body.codingReviews[]` contract to `patchConversion()` so a
   portal can submit explicit human candidate selections and optional reasons.
 - Added deeply immutable, bounded local pagination for the coding proposals

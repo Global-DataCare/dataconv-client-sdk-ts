@@ -102,6 +102,41 @@ function conversionResponse(): DataConvDidCommResponse<ConvertedBundleResource> 
 }
 
 describe('DataConv coding review contract', () => {
+  it('carries the same FHIR ResearchStudy reference through upload polling and human promotion', async () => {
+    const client = createClient();
+    const researchStudy = { reference: 'ResearchStudy/study-one' };
+    mockedAxios.request
+      .mockResolvedValueOnce({ status: 202, headers: { location: '/upload-response' }, data: {} })
+      .mockResolvedValueOnce({ status: 200, headers: {}, data: conversionResponse() })
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {},
+        data: { thid: 'conversion-1', body: { status: 'success', promotedCount: 1 } }
+      });
+
+    await client.uploadSpreadsheet(new Uint8Array([1, 2, 3]), {
+      softwareId: 'source-v1.0',
+      thid: 'conversion-1',
+      researchStudy
+    });
+    await client.pollUploadResponse({
+      softwareId: 'source-v1.0',
+      thid: 'conversion-1',
+      researchStudy
+    });
+    await client.patchConversion({
+      softwareId: 'source-v1.0',
+      thid: 'conversion-1',
+      researchStudy,
+      body: { codingReviews: [review] }
+    });
+
+    const requests = mockedAxios.request.mock.calls.map(([request]) => request);
+    expect(requests[0]?.data).toMatchObject({ body: { researchStudy } });
+    expect(requests[1]?.data).toMatchObject({ researchStudy });
+    expect(requests[2]?.data).toMatchObject({ body: { researchStudy, codingReviews: [review] } });
+  });
+
   it('transports typed coding reviews inside the DIDComm body used by the Python API', async () => {
     const client = createClient();
     mockedAxios.request.mockResolvedValueOnce({

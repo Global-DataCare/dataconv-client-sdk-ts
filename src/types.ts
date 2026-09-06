@@ -245,6 +245,12 @@ export interface DataConvUploadBaseOptions {
   mode?: string;
   send?: boolean;
   inlineConfig?: Record<string, unknown>;
+  /** Stable FHIR ResearchStudy context; correlation only, never authorization. */
+  researchStudy?: DataConvFhirReference;
+}
+
+export interface DataConvFhirReference {
+  readonly reference: string;
 }
 
 export interface DataConvUploadDidCommOptions extends DataConvUploadBaseOptions {
@@ -275,6 +281,8 @@ export interface DataConvConversionPollOptions {
   idToken?: string;
   vpToken?: string;
   authorizationToken?: string;
+  /** Must match the ResearchStudy supplied when the research upload was created. */
+  researchStudy?: DataConvFhirReference;
 }
 
 export interface DataConvExchangeTokenOptions {
@@ -383,6 +391,8 @@ export interface DataConvPatchOptions {
   idToken?: string;
   vpToken?: string;
   authorizationToken?: string;
+  /** Must match the ResearchStudy supplied when the research upload was created. */
+  researchStudy?: DataConvFhirReference;
   /**
    * Human coding decisions accepted by DataConv's promotion endpoint.
    * Unconfirmed AI candidates remain outside authoritative flat claims.
