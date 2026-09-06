@@ -419,6 +419,42 @@ const client = new DataConvClient({
 client.setVpToken(vpTokenFromActivation);
 ```
 
+### ResearchStudy SMART token exchange
+
+After a professional has completed DCR and received a study-scoped SMART token
+from the gateway, exchange that access token through the dedicated RFC 8693
+profile. This profile does not use the organization-onboarding `vpToken` or
+`clientAssertion` proofs:
+
+```ts
+const researchStudy = { reference: 'ResearchStudy/study-2026-01' } as const;
+
+const dataconvAuthorization = await client.exchangeResearchStudySmartToken({
+  tenantId: '7654321',
+  jurisdiction: 'CA-BC',
+  sector: 'animal-research',
+  subjectToken: gwStudySmartToken,
+  subjectTokenType: 'urn:ietf:params:oauth:token-type:access_token',
+  researchStudy
+});
+
+await client.uploadSpreadsheetMultipart({
+  fileBytes,
+  softwareId: 'api-config',
+  authorizationToken: dataconvAuthorization.access_token,
+  researchStudy: dataconvAuthorization.researchStudy
+});
+```
+
+Only the RFC 8693 `subject_token` and access-token type cross the exchange
+boundary. DataConv reads the signed `study` claim, and the SDK rejects a result
+whose `study` differs from `researchStudy.reference`. The same reference object
+is returned as `result.researchStudy` so callers can preserve it through
+upload, polling and human review. See [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693.html).
+
+The existing `exchangeToken()` method remains the OIDC/controller-proof
+profile and still requires both `vpToken` and `clientAssertion`.
+
 Also works with `fetch`:
 
 ```ts

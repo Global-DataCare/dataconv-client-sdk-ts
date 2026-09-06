@@ -308,6 +308,38 @@ export interface DataConvExchangeTokenResult {
   [key: string]: unknown;
 }
 
+/**
+ * RFC 8693 token type used when the subject token is a GW-issued SMART access token.
+ * @see https://www.rfc-editor.org/rfc/rfc8693.html#section-3
+ */
+export type DataConvAccessTokenType = 'urn:ietf:params:oauth:token-type:access_token';
+
+/**
+ * Study-scoped SMART exchange input.
+ *
+ * The ResearchStudy reference is correlation context for the subsequent
+ * upload/review calls. DataConv validates it against the signed `study` claim
+ * in the GW token; it is deliberately not sent as a second authority claim.
+ * @see https://www.rfc-editor.org/rfc/rfc8693.html
+ */
+export interface DataConvResearchStudySmartExchangeOptions {
+  tenantId?: string;
+  alternateName?: string;
+  jurisdiction?: string;
+  sector?: string;
+  subjectToken: string;
+  subjectTokenType?: DataConvAccessTokenType;
+  researchStudy: DataConvFhirReference;
+}
+
+/** DataConv token bound to the exact ResearchStudy from the GW SMART grant. */
+export interface DataConvResearchStudySmartExchangeResult extends DataConvExchangeTokenResult {
+  issued_token_type: DataConvAccessTokenType;
+  study: string;
+  /** The same stable reference object supplied to the exchange call. */
+  researchStudy: DataConvFhirReference;
+}
+
 export interface DataConvApiKeyActionAgent {
   email?: string;
   sameAs?: string;

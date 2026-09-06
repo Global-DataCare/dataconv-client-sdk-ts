@@ -39,6 +39,8 @@ import type {
   DataConvApiKeyLifecycleResult,
   DataConvExchangeTokenOptions,
   DataConvExchangeTokenResult,
+  DataConvResearchStudySmartExchangeOptions,
+  DataConvResearchStudySmartExchangeResult,
   DataConvMultipartUploadOptions,
   DataConvOperationOutcome,
   DataConvOrganizationTenantActivationOptions,
@@ -166,6 +168,49 @@ export class DataConvClient {
       throw new Error(`Unexpected exchangeToken response status: ${response.status}`);
     }
     return response.data as DataConvExchangeTokenResult;
+  }
+
+  /**
+   * Exchanges a GW-issued, study-scoped SMART access token under RFC 8693.
+   *
+   * Unlike the organization OIDC exchange, this profile does not accept an
+   * ICA VP or OAuth client assertion. DataConv derives the study solely from
+   * the signed SMART token and the SDK verifies that the response remains
+   * correlated with the caller's stable FHIR ResearchStudy reference.
+   * @see https://www.rfc-editor.org/rfc/rfc8693.html
+   */
+  async exchangeResearchStudySmartToken(
+    options: DataConvResearchStudySmartExchangeOptions
+  ): Promise<DataConvResearchStudySmartExchangeResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const subjectToken = requireText(options.subjectToken, 'subjectToken');
+    const subjectTokenType = options.subjectTokenType || 'urn:ietf:params:oauth:token-type:access_token';
+    const researchStudyReference = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/professional/research/auth/_exchange`,
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        subject_token: subjectToken,
+        subject_token_type: subjectTokenType
+      }
+    });
+
+    if (response.status !== 200) {
+      throw new Error(`Unexpected exchangeResearchStudySmartToken response status: ${response.status}`);
+    }
+
+    const result = response.data as DataConvResearchStudySmartExchangeResult;
+    if (String(result.study || '').trim() !== researchStudyReference) {
+      throw new Error('ResearchStudy returned by DataConv does not match the requested ResearchStudy');
+    }
+    return {
+      ...result,
+      researchStudy: options.researchStudy
+    };
   }
 
   async createTenantApiKeyActions(options: DataConvApiKeyCreateActionsOptions): Promise<DataConvApiKeyCreateActionsResult> {

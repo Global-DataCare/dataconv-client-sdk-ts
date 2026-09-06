@@ -1,6 +1,6 @@
 {
   "name": "dataconv-client-sdk-ts",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "DataConv TypeScript SDK for tenant activation, research mapping and conversion APIs.",
   "type": "module",
   "main": "dist/index.js",
