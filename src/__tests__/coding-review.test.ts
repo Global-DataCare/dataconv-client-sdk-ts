@@ -154,7 +154,15 @@ describe('DataConv coding review contract', () => {
       draftState: 'promoted'
     });
 
-    firstPage.items[0].rowContext.species = 'mutated-in-ui';
+    expect(Object.isFrozen(firstPage)).toBe(true);
+    expect(Object.isFrozen(firstPage.items)).toBe(true);
+    expect(Object.isFrozen(firstPage.items[0])).toBe(true);
+    expect(Object.isFrozen(firstPage.items[0].rowContext)).toBe(true);
+    expect(Object.isFrozen(firstPage.items[0].candidates)).toBe(true);
+    expect(Object.isFrozen(firstPage.items[0].candidates[0])).toBe(true);
+    expect(() => {
+      (firstPage.items[0].rowContext as Record<string, string>).species = 'mutated-in-ui';
+    }).toThrow(TypeError);
     expect(client.getCodingReviewPage(sourceResponse).items[0].rowContext.species).toBe('canine');
   });
 

@@ -13,6 +13,16 @@ import type {
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
 
+/** Deep-freezes only SDK-owned projections; callers' conversion response is never traversed here. */
+function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
+  if (!value || typeof value !== 'object') return value;
+  const objectValue = value as object;
+  if (seen.has(objectValue)) return value;
+  seen.add(objectValue);
+  for (const child of Object.values(objectValue)) deepFreeze(child, seen);
+  return Object.freeze(value);
+}
+
 function record(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -153,7 +163,7 @@ export function codingReviewPage(
   const total = rows.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
   const start = (page - 1) * pageSize;
-  return {
+  return deepFreeze({
     items: rows.slice(start, start + pageSize),
     page,
     pageSize,
@@ -161,5 +171,5 @@ export function codingReviewPage(
     totalPages,
     hasPreviousPage: page > 1 && total > 0,
     hasNextPage: page < totalPages
-  };
+  });
 }

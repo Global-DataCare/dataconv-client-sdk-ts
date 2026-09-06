@@ -391,26 +391,26 @@ export interface DataConvPatchOptions {
 }
 
 export interface DataConvCodingCandidate {
-  id: string;
-  system: string;
-  code: string;
-  display: string;
-  source?: string;
-  recommendationPercent?: number;
-  evidence?: string;
+  readonly id: string;
+  readonly system: string;
+  readonly code: string;
+  readonly display: string;
+  readonly source?: string;
+  readonly recommendationPercent?: number;
+  readonly evidence?: string;
 }
 
 export type DataConvCodingProposalStatus = 'proposed' | 'accepted';
 
 export interface DataConvCodingProposal {
-  id: string;
-  status: DataConvCodingProposalStatus;
-  field: string;
-  inputText: string;
-  rowContext: Record<string, string>;
-  candidates: DataConvCodingCandidate[];
-  selectedCandidateId?: string;
-  reviewedAt?: string;
+  readonly id: string;
+  readonly status: DataConvCodingProposalStatus;
+  readonly field: string;
+  readonly inputText: string;
+  readonly rowContext: Readonly<Record<string, string>>;
+  readonly candidates: readonly DataConvCodingCandidate[];
+  readonly selectedCandidateId?: string;
+  readonly reviewedAt?: string;
 }
 
 /** Exact human-selection shape consumed by `body.codingReviews[]`. */
@@ -430,13 +430,13 @@ export type DataConvReviewDraftState = 'draft' | 'promoted' | 'unknown';
 
 /** One UI review row derived from one server `meta.codingProposals[]` item. */
 export interface DataConvCodingReviewRow extends DataConvCodingProposal {
-  subjectResourceType: string;
-  subjectId: string;
-  resourceType: string;
-  resourceId: string;
-  proposalId: string;
-  state: DataConvCodingProposalStatus;
-  draftState: DataConvReviewDraftState;
+  readonly subjectResourceType: string;
+  readonly subjectId: string;
+  readonly resourceType: string;
+  readonly resourceId: string;
+  readonly proposalId: string;
+  readonly state: DataConvCodingProposalStatus;
+  readonly draftState: DataConvReviewDraftState;
 }
 
 export interface DataConvCodingReviewPageOptions {
@@ -447,13 +447,13 @@ export interface DataConvCodingReviewPageOptions {
 }
 
 export interface DataConvCodingReviewPage {
-  items: DataConvCodingReviewRow[];
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
+  readonly items: readonly DataConvCodingReviewRow[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly total: number;
+  readonly totalPages: number;
+  readonly hasPreviousPage: boolean;
+  readonly hasNextPage: boolean;
 }
 
 export interface DataConvPatchResponseBody {
