@@ -18,6 +18,7 @@ import {
   sleep
 } from './client/helpers.js';
 import { buildAttachment, buildEnvelope, buildMultipartFormData, buildUploadExtra } from './client/message.js';
+import { codingReviewPage } from './coding-review.js';
 import type {
   DataConvBatchOptions,
   ConversionResultEntry,
@@ -25,6 +26,8 @@ import type {
   CreateTenantConfigOptions,
   DataConvClientConfig,
   DataConvConversionPollOptions,
+  DataConvCodingReviewPage,
+  DataConvCodingReviewPageOptions,
   DataConvCreateResult,
   DataConvCrypto,
   DataConvDidCommAttachment,
@@ -254,6 +257,13 @@ export class DataConvClient {
     response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse
   ): ConvertedBundleResource | undefined {
     return this.getConversionEntry(response)?.resource;
+  }
+
+  getCodingReviewPage(
+    response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse,
+    options: DataConvCodingReviewPageOptions = {}
+  ): DataConvCodingReviewPage {
+    return codingReviewPage(response, options);
   }
 
   getResponseIssues<TResource>(
@@ -567,7 +577,10 @@ export class DataConvClient {
       exp: options.exp,
       idToken: options.idToken,
       vpToken: options.vpToken,
-      body: options.body ?? DEFAULT_UPLOAD_BODY,
+      body: {
+        ...(options.body ?? DEFAULT_UPLOAD_BODY),
+        ...(options.researchStudy ? { researchStudy: options.researchStudy } : {})
+      },
       attachments: [buildAttachment(source, options, this.cryptoApi)],
       extra: buildUploadExtra(options, this.config)
     }, this.messageDeps());
@@ -671,7 +684,8 @@ export class DataConvClient {
           iat: options.iat,
           exp: options.exp,
           idToken: options.idToken,
-          vpToken: options.vpToken
+          vpToken: options.vpToken,
+          extra: options.researchStudy ? { researchStudy: options.researchStudy } : undefined
         }, this.messageDeps())
       }),
       `Failed polling conversion response after ${this.retryTimes} attempts`
@@ -697,7 +711,9 @@ export class DataConvClient {
       iss: options.iss,
       type: options.type,
       idToken: options.idToken,
-      vpToken: options.vpToken
+      vpToken: options.vpToken,
+      authorizationToken: options.authorizationToken,
+      researchStudy: options.researchStudy
     });
   }
 
@@ -723,7 +739,11 @@ export class DataConvClient {
         iat: options.iat,
         exp: options.exp,
         idToken: options.idToken,
-        vpToken: options.vpToken
+        vpToken: options.vpToken,
+        body: {
+          ...(options.body ?? {}),
+          ...(options.researchStudy ? { researchStudy: options.researchStudy } : {})
+        }
       }, this.messageDeps())
     });
 
@@ -756,7 +776,8 @@ export class DataConvClient {
         iat: options.iat,
         exp: options.exp,
         idToken: options.idToken,
-        vpToken: options.vpToken
+        vpToken: options.vpToken,
+        body: options.researchStudy ? { researchStudy: options.researchStudy } : undefined
       }, this.messageDeps())
     });
 

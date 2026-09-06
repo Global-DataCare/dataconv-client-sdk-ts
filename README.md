@@ -15,6 +15,7 @@ not depend on React or React Native.
     - [Field selection tracking (UI dedup)](#field-selection-tracking-ui-dedup)
     - [React example: multi-dropdown dedup](#react-example-multi-dropdown-dedup)
   - [End-to-end flow](#end-to-end-flow)
+  - [Human coding review in a portal](#human-coding-review-in-a-portal)
   - [Multipart / local file upload](#multipart--local-file-upload)
   - [Backend initialization](#backend-initialization)
   - [CLI](#cli)
@@ -314,6 +315,76 @@ For DIDComm polling responses, the SDK also exposes:
 
 - `getMainDiagnosticInfoByResponse(response)` — reads `OperationOutcome.issue[0].diagnostics` from a response.
 - `getMainDiagnosticInfo()` — reads it from the last stored config/conversion response.
+
+---
+
+## Human coding review in a portal
+
+The current DataConv `_upload-response` returns one `ConversionResult` whose
+`resource` is the complete generated Bundle. It does not expose a server page
+or cursor. `getCodingReviewPage()` therefore creates a bounded (maximum 100
+items), one-based local page from the `meta.codingProposals[]` entries already
+present in that response. It does not modify the response object.
+
+Each returned UI row identifies the subject, generated resource and proposal.
+Its `state` is the server proposal state (`proposed` or `accepted`), while
+`draftState` is derived from the resource's `<Resource>.userSelected` claim
+(`draft`, `promoted` or `unknown`). No spreadsheet row number is exposed by the
+current API, so the SDK does not manufacture one.
+
+```ts
+const page = client.getCodingReviewPage(conversionResponse, {
+  page: 1,
+  pageSize: 25
+});
+
+const selected = page.items[0];
+const patchResponse = await client.patchConversion({
+  thid: uploadResult.thid,
+  softwareId: 'api-config',
+  authorizationToken: '<review-token>',
+  body: {
+    codingReviews: [{
+      resourceType: selected.resourceType,
+      resourceId: selected.resourceId,
+      proposalId: selected.proposalId,
+      selectedCandidateId: selected.candidates[0].id,
+      reason: 'Confirmed after reviewing the clinical row context'
+    }]
+  }
+});
+```
+
+For a study-scoped import, pass the same literal FHIR reference during upload,
+polling and correction. DataConv validates this correlation independently from
+the caller's authorization:
+
+```ts
+const researchStudy = { reference: 'ResearchStudy/study-2026-01' };
+
+await client.uploadSpreadsheetMultipart({
+  fileBytes,
+  softwareId: 'api-config',
+  researchStudy
+});
+await client.pollUploadResponse({
+  softwareId: 'api-config',
+  thid,
+  researchStudy
+});
+await client.patchConversion({
+  softwareId: 'api-config',
+  thid,
+  researchStudy,
+  body: { codingReviews }
+});
+```
+
+Only `body.codingReviews[]` is currently accepted for terminology corrections:
+each decision selects one candidate already belonging to the proposal. The
+server rejects unknown resources, proposals or candidates, materializes only
+the selected code and English display, and then returns the promotion result
+with `promotedCount`, `issues` and updated dataset entries.
 
 ---
 

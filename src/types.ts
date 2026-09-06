@@ -245,6 +245,12 @@ export interface DataConvUploadBaseOptions {
   mode?: string;
   send?: boolean;
   inlineConfig?: Record<string, unknown>;
+  /** Stable FHIR ResearchStudy context; correlation only, never authorization. */
+  researchStudy?: DataConvFhirReference;
+}
+
+export interface DataConvFhirReference {
+  readonly reference: string;
 }
 
 export interface DataConvUploadDidCommOptions extends DataConvUploadBaseOptions {
@@ -275,6 +281,8 @@ export interface DataConvConversionPollOptions {
   idToken?: string;
   vpToken?: string;
   authorizationToken?: string;
+  /** Must match the ResearchStudy supplied when the research upload was created. */
+  researchStudy?: DataConvFhirReference;
 }
 
 export interface DataConvExchangeTokenOptions {
@@ -383,12 +391,87 @@ export interface DataConvPatchOptions {
   idToken?: string;
   vpToken?: string;
   authorizationToken?: string;
+  /** Must match the ResearchStudy supplied when the research upload was created. */
+  researchStudy?: DataConvFhirReference;
+  /**
+   * Human coding decisions accepted by DataConv's promotion endpoint.
+   * Unconfirmed AI candidates remain outside authoritative flat claims.
+   */
+  body?: DataConvPromotionBody;
+}
+
+export interface DataConvCodingCandidate {
+  readonly id: string;
+  readonly system: string;
+  readonly code: string;
+  readonly display: string;
+  readonly source?: string;
+  readonly recommendationPercent?: number;
+  readonly evidence?: string;
+}
+
+export type DataConvCodingProposalStatus = 'proposed' | 'accepted';
+
+export interface DataConvCodingProposal {
+  readonly id: string;
+  readonly status: DataConvCodingProposalStatus;
+  readonly field: string;
+  readonly inputText: string;
+  readonly rowContext: Readonly<Record<string, string>>;
+  readonly candidates: readonly DataConvCodingCandidate[];
+  readonly selectedCandidateId?: string;
+  readonly reviewedAt?: string;
+}
+
+/** Exact human-selection shape consumed by `body.codingReviews[]`. */
+export interface DataConvCodingReview {
+  resourceType: string;
+  resourceId: string;
+  proposalId: string;
+  selectedCandidateId: string;
+  reason?: string;
+}
+
+export interface DataConvPromotionBody extends Record<string, unknown> {
+  codingReviews?: DataConvCodingReview[];
+}
+
+export type DataConvReviewDraftState = 'draft' | 'promoted' | 'unknown';
+
+/** One UI review row derived from one server `meta.codingProposals[]` item. */
+export interface DataConvCodingReviewRow extends DataConvCodingProposal {
+  readonly subjectResourceType: string;
+  readonly subjectId: string;
+  readonly resourceType: string;
+  readonly resourceId: string;
+  readonly proposalId: string;
+  readonly state: DataConvCodingProposalStatus;
+  readonly draftState: DataConvReviewDraftState;
+}
+
+export interface DataConvCodingReviewPageOptions {
+  /** One-based page number. */
+  page?: number;
+  /** Bounded to 1..100 because upload-response currently returns one full Bundle. */
+  pageSize?: number;
+}
+
+export interface DataConvCodingReviewPage {
+  readonly items: readonly DataConvCodingReviewRow[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly total: number;
+  readonly totalPages: number;
+  readonly hasPreviousPage: boolean;
+  readonly hasNextPage: boolean;
 }
 
 export interface DataConvPatchResponseBody {
   status?: string;
   promotedCount?: number;
   message?: string;
+  issues?: DataConvOperationOutcome;
+  data?: Array<TenantAdapterConfigEntry<Record<string, unknown>>>;
   [key: string]: unknown;
 }
 
