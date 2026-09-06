@@ -1,6 +1,6 @@
 {
   "name": "dataconv-client-sdk-ts",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "DataConv TypeScript SDK for tenant activation, research mapping and conversion APIs.",
   "type": "module",
   "main": "dist/index.js",
@@ -55,6 +55,6 @@
   "dependencies": {
     "axios": "^1.20.0",
     "fflate": "^0.8.3",
-    "gdc-common-utils-ts": "^1.2.0"
+    "gdc-common-utils-ts": "2.9.4"
   }
 }

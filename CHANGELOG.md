@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.4.6 - 2026-09-06
+
+- Pin `gdc-common-utils-ts@2.9.4` so ResearchStudy clients reuse the current
+  claims and Consent contract instead of installing a legacy 1.x copy.
+
 ## 0.4.5 - 2026-09-06
 
 - Added a typed RFC 8693 exchange for a GW-issued, ResearchStudy-scoped SMART
