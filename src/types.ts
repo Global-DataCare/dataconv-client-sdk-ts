@@ -261,6 +261,7 @@ export interface DataConvUploadDidCommOptions extends DataConvUploadBaseOptions 
 }
 
 export interface DataConvMultipartUploadOptions extends DataConvUploadBaseOptions {
+  /** XLSX bytes; callers enforce their deployment's workbook byte limit. */
   fileBytes: Uint8Array;
   fileName?: string;
   mediaType?: string;
