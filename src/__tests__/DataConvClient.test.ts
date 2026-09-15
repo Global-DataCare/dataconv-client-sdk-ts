@@ -862,7 +862,7 @@ describe('DataConvClient', () => {
     expect(result.study).toBe(researchStudy.reference);
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
-      url: '/publisher/cds-CA-BC/v1/animal-research/clinic-demo/professional/research/auth/_exchange',
+      url: '/publisher/cds-CA-BC/v1/animal-research/clinic-demo/research/auth/_exchange',
       data: {
         subject_token: 'gw-study-smart-token',
         subject_token_type: 'urn:ietf:params:oauth:token-type:access_token'
@@ -887,6 +887,23 @@ describe('DataConvClient', () => {
       subjectToken: 'gw-study-smart-token',
       researchStudy: { reference: 'ResearchStudy/study-2026-01' }
     })).rejects.toThrow('ResearchStudy returned by DataConv does not match the requested ResearchStudy');
+  });
+
+  it('preserves safe service diagnostics when a multipart upload is rejected', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 403,
+      headers: {},
+      data: {
+        resourceType: 'OperationOutcome',
+        issue: [{ severity: 'error', code: 'forbidden', diagnostics: 'Bearer token ResearchStudy does not match request' }]
+      }
+    });
+
+    await expect(client.uploadSpreadsheetMultipart({
+      softwareId: 'qvet-v1.0',
+      fileBytes: new Uint8Array([1, 2, 3]),
+      authorizationToken: 'study-bearer'
+    })).rejects.toThrow('Bearer token ResearchStudy does not match request');
   });
 
   it('keeps OIDC exchange proof requirements unchanged', async () => {
