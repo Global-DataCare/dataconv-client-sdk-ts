@@ -421,10 +421,13 @@ client.setVpToken(vpTokenFromActivation);
 
 ### ResearchStudy SMART token exchange
 
-After a professional has completed DCR and received a study-scoped SMART token
-from the gateway, exchange that access token through the dedicated RFC 8693
-profile. This profile does not use the organization-onboarding `vpToken` or
-`clientAssertion` proofs:
+Exchange a gateway-issued, study-scoped SMART token through the dedicated RFC
+8693 profile. A DCR-bound professional with active Consent carries exact
+`organization/ResearchSubject.crus?study=...`; the current organization
+controller carries exact create-only `organization/ResearchSubject.c?study=...`
+for an existing study. This profile does not send the organization-onboarding
+`vpToken` or `clientAssertion`, and DataConv retains the actor kind rather than
+representing a controller as a professional:
 
 ```ts
 const researchStudy = { reference: 'ResearchStudy/study-2026-01' } as const;
@@ -451,6 +454,14 @@ boundary. DataConv reads the signed `study` claim, and the SDK rejects a result
 whose `study` differs from `researchStudy.reference`. The same reference object
 is returned as `result.researchStudy` so callers can preserve it through
 upload, polling and human review. See [RFC 8693](https://www.rfc-editor.org/rfc/rfc8693.html).
+
+`uploadSpreadsheetMultipart()` keeps the XLSX binary in multipart and the
+short-lived token in `Authorization`; it does not wrap the workbook in a
+DIDComm attachment. Deployment code must enforce the same
+`RESEARCH_WORKBOOK_MAX_BYTES` value at the portal/BFF and DataConv boundaries
+(8 MiB by default; 2, 8 and 25 MiB are useful presets). GW does not receive the
+binary. DICOM needs a separate streaming contract with per-instance,
+instance-count and aggregate-study limits.
 
 The existing `exchangeToken()` method remains the OIDC/controller-proof
 profile and still requires both `vpToken` and `clientAssertion`.

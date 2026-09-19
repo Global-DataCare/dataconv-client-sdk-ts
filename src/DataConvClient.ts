@@ -174,9 +174,11 @@ export class DataConvClient {
    * Exchanges a GW-issued, study-scoped SMART access token under RFC 8693.
    *
    * Unlike the organization OIDC exchange, this profile does not accept an
-   * ICA VP or OAuth client assertion. DataConv derives the study solely from
-   * the signed SMART token and the SDK verifies that the response remains
-   * correlated with the caller's stable FHIR ResearchStudy reference.
+   * ICA VP or OAuth client assertion. The GW token may authorize a DCR-bound
+   * professional or the current organization controller; DataConv derives the
+   * actor kind from the exact signed scope and never treats the controller as
+   * a professional. The response must remain correlated with the caller's
+   * stable FHIR ResearchStudy reference.
    * @see https://www.rfc-editor.org/rfc/rfc8693.html
    */
   async exchangeResearchStudySmartToken(
@@ -191,7 +193,7 @@ export class DataConvClient {
 
     const response = await this.request({
       method: 'POST',
-      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/professional/research/auth/_exchange`,
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/research/auth/_exchange`,
       headers: { 'Content-Type': 'application/json' },
       body: {
         subject_token: subjectToken,
@@ -200,7 +202,7 @@ export class DataConvClient {
     });
 
     if (response.status !== 200) {
-      throw new Error(`Unexpected exchangeResearchStudySmartToken response status: ${response.status}`);
+      throw unexpectedResponseError('exchangeResearchStudySmartToken', response.status, response.data);
     }
 
     const result = response.data as DataConvResearchStudySmartExchangeResult;
@@ -650,6 +652,11 @@ export class DataConvClient {
     };
   }
 
+  /**
+   * Uploads workbook bytes as multipart while carrying any study token only in
+   * Authorization. The SDK does not own deployment size policy: portal/BFF and
+   * DataConv must enforce their shared RESEARCH_WORKBOOK_MAX_BYTES value.
+   */
   async uploadSpreadsheetMultipart(options: DataConvMultipartUploadOptions): Promise<DataConvUploadResult> {
     return this.uploadWithFile(options);
   }
@@ -689,7 +696,7 @@ export class DataConvClient {
     });
 
     if (response.status !== 202) {
-      throw new Error(`Unexpected uploadSpreadsheetMultipart response status: ${response.status}`);
+      throw unexpectedResponseError('uploadSpreadsheetMultipart', response.status, response.data);
     }
 
     return {
@@ -878,6 +885,8 @@ export class DataConvClient {
         return response.data as T;
       }
 
+      if (attempt === this.retryTimes - 1) break;
+
       const retryAfter = headerValue(response.headers, 'retry-after');
       const retrySeconds = retryAfter ? Number(retryAfter) : undefined;
       const delayMs = retrySeconds !== undefined && !Number.isNaN(retrySeconds)
@@ -947,4 +956,26 @@ export class DataConvClient {
       currentVpToken: this.vpToken
     };
   }
+}
+
+/**
+ * Keeps an HTTP status for programmatic classification while preserving one
+ * bounded, human-safe OperationOutcome diagnostic from DataConv. Compact JWTs,
+ * request bodies and response objects are never serialized into the error.
+ */
+function unexpectedResponseError(operation: string, status: number, data: unknown): Error {
+  const record = asErrorRecord(data);
+  const body = asErrorRecord(record.body);
+  const issues = asErrorRecord(body.issues || record.issues || data);
+  const issue = Array.isArray(issues.issue) ? asErrorRecord(issues.issue[0]) : {};
+  const detail = [record.detail, body.detail, issue.diagnostics, record.error]
+    .find(value => typeof value === 'string' && value.trim());
+  const prefix = `Unexpected ${operation} response status: ${status}`;
+  return new Error(detail ? `${prefix}. ${String(detail).trim().slice(0, 500)}` : prefix);
+}
+
+function asErrorRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
 }
