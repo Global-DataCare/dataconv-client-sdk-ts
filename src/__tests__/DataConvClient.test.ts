@@ -618,6 +618,24 @@ describe('DataConvClient', () => {
     jest.useRealTimers();
   });
 
+  it('bounds conversion polling to three attempts by default', async () => {
+    mockedAxios.request.mockResolvedValue({ status: 202, headers: {}, data: {} });
+    const boundedClient = new DataConvClient({
+      issuerDid: 'did:web:clinic.example:employee:it:loader',
+      alternateName: 'clinic-demo',
+      tenantId: 'clinic-demo',
+      jurisdiction: 'ES',
+      baseUrl: 'http://localhost:8080',
+      retryDelayMs: 0,
+    });
+
+    await expect(boundedClient.pollUploadResponse({
+      thid: 'up-default-limit',
+      softwareId: 'qvet-v1.0',
+    })).rejects.toThrow('Failed polling conversion response after 3 attempts');
+    expect(mockedAxios.request).toHaveBeenCalledTimes(3);
+  });
+
 
   it('patches promoted conversion resources through the canonical digital twin endpoint', async () => {
     client.setIdToken('session-id-1');
@@ -697,6 +715,57 @@ describe('DataConvClient', () => {
         date: 'ge2026-01-01'
       }
     }));
+  });
+
+  it('searches shared study jobs as flat Task resources in a searchset Bundle', async () => {
+    client.setIdToken('study-session-token');
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        total: 1,
+        entry: [{
+          resource: {
+            resourceType: 'Task',
+            id: 'job-1',
+            meta: { claims: {} },
+          },
+        }],
+      },
+    });
+
+    const response = await client.searchConversionJobs({
+      researchStudy: { reference: 'ResearchStudy/study-2026-01' },
+      count: 20,
+      offset: 0,
+    });
+
+    expect(response.entry?.[0]?.resource?.id).toBe('job-1');
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/jobs/Task/_search',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer study-session-token',
+      },
+      data: {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'study', valueReference: { reference: 'ResearchStudy/study-2026-01' } },
+          { name: '_count', valueInteger: 20 },
+          { name: '_offset', valueInteger: 0 },
+        ],
+      },
+    }));
+  });
+
+  it('rejects a conversion job page larger than one hundred', async () => {
+    await expect(client.searchConversionJobs({
+      researchStudy: { reference: 'ResearchStudy/study-2026-01' },
+      count: 101,
+    })).rejects.toThrow('count must be between 1 and 100');
   });
 
   it('normalizes FHIR search parameter names to lowercase before sending the request', async () => {

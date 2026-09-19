@@ -380,6 +380,25 @@ await client.patchConversion({
 });
 ```
 
+The asynchronous job history is study-scoped and shared across authorized
+actors. It is not browser-local state and it is not restricted to the actor
+that submitted the workbook:
+
+```ts
+const jobs = await client.searchConversionJobs({
+  researchStudy,
+  authorizationToken: '<study-token>',
+  count: 25,
+  offset: 0
+});
+```
+
+`jobs` is a FHIR `Bundle` with `type=searchset` containing flat-claim `Task`
+resources. The SDK does not expose a JSON:API variant; that can be added later
+as an edge adapter without replacing the canonical job contract. Polling uses
+at most three attempts by default, after which callers can keep working and
+query this history later.
+
 Only `body.codingReviews[]` is currently accepted for terminology corrections:
 each decision selects one candidate already belonging to the proposal. The
 server rejects unknown resources, proposals or candidates, materializes only
