@@ -49,6 +49,8 @@ import type {
   DataConvPatchResponse,
   DataConvSearchBundle,
   DataConvSearchOptions,
+  DataConvJobSearchOptions,
+  DataConvTaskResource,
   DataConvTenantConfigPollOptions,
   DataConvUploadDidCommOptions,
   DataConvUploadResult,
@@ -80,7 +82,7 @@ export class DataConvClient {
     this.fetchFn = config.fetch ?? (typeof fetch !== 'undefined' ? fetch : undefined);
     this.cryptoApi = config.crypto ?? (globalThis as typeof globalThis & { crypto?: DataConvCrypto }).crypto;
     this.httpClient = config.httpClient ?? (config.fetch ? undefined : axios.create({ baseURL: this.baseUrl }));
-    this.retryTimes = config.retryTimes ?? 10;
+    this.retryTimes = config.retryTimes ?? 3;
     this.retryDelayMs = config.retryDelayMs ?? 1000;
     this.defaultExpSeconds = config.defaultExpSeconds ?? 300;
     this.idToken = config.idToken;
@@ -873,6 +875,44 @@ export class DataConvClient {
     }
 
     return response.data as DataConvSearchBundle<TResource>;
+  }
+
+  async searchConversionJobs(
+    options: DataConvJobSearchOptions
+  ): Promise<DataConvSearchBundle<DataConvTaskResource>> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    const count = options.count ?? 20;
+    const offset = options.offset ?? 0;
+    if (!Number.isInteger(count) || count < 1 || count > 100) {
+      throw new Error('count must be between 1 and 100');
+    }
+    if (!Number.isInteger(offset) || offset < 0) {
+      throw new Error('offset must be zero or greater');
+    }
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/jobs/Task/_search`,
+      headers,
+      body: {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'study', valueReference: { reference: study } },
+          { name: '_count', valueInteger: count },
+          { name: '_offset', valueInteger: offset },
+        ],
+      },
+    });
+    if (response.status !== 200) {
+      throw new Error(`Unexpected searchConversionJobs response status: ${response.status}`);
+    }
+    return response.data as DataConvSearchBundle<DataConvTaskResource>;
   }
 
   private async pollUntilComplete<T>(

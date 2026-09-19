@@ -50,6 +50,8 @@ export type {
   DataConvSearchBundle,
   DataConvSearchBundleEntry,
   DataConvSearchOptions,
+  DataConvJobSearchOptions,
+  DataConvTaskResource,
   DataConvSupportedField,
   DataConvTenantConfigPollOptions,
   DataConvUploadDidCommOptions,

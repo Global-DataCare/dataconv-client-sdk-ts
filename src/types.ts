@@ -541,6 +541,29 @@ export interface DataConvSearchOptions {
   idToken?: string;
 }
 
+/** One DataConv conversion job projected through canonical flat Task claims. */
+export interface DataConvTaskResource {
+  resourceType: 'Task';
+  id: string;
+  meta: {
+    claims: Record<string, unknown>;
+  };
+}
+
+export interface DataConvJobSearchOptions {
+  alternateName?: string;
+  tenantId?: string;
+  jurisdiction?: string;
+  sector?: string;
+  researchStudy: DataConvFhirReference;
+  /** Page size, bounded by DataConv to 1..100. */
+  count?: number;
+  /** Zero-based result offset. */
+  offset?: number;
+  authorizationToken?: string;
+  idToken?: string;
+}
+
 export interface DataConvBatchOptions extends DataConvPatchOptions {}
 
 export interface DataConvCreateResult {

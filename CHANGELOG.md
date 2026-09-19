@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-09-19
+
+- Add `searchConversionJobs()` for the shared, study-scoped DataConv job
+  history returned as flat-claim `Task` resources in a FHIR `searchset`
+  `Bundle`.
+- Reduce the default bounded polling budget from ten attempts to three. Jobs
+  that remain asynchronous can be revisited through the shared search instead
+  of keeping the importing screen blocked.
+- Pin `gdc-common-utils-ts@2.9.21` for the canonical Task claim vocabulary.
+
 ## 0.4.8 - 2026-09-19
 
 - Stop a bounded poll immediately after its final unsuccessful request instead
