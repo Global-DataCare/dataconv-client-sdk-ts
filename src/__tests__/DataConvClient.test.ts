@@ -588,6 +588,36 @@ describe('DataConvClient', () => {
     expect(fetchClient.getConversionEntry(response)?.type).toBe('ConversionResult');
   });
 
+  it('does not wait for Retry-After after the final bounded polling attempt', async () => {
+    jest.useFakeTimers();
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 202,
+      headers: { 'retry-after': '30' },
+      data: {}
+    });
+    const boundedClient = new DataConvClient({
+      issuerDid: 'did:web:clinic.example:employee:it:loader',
+      alternateName: 'clinic-demo',
+      tenantId: 'clinic-demo',
+      jurisdiction: 'ES',
+      baseUrl: 'http://localhost:8080',
+      retryTimes: 1,
+      retryDelayMs: 1
+    });
+
+    const polling = boundedClient.pollUploadResponse({
+      thid: 'up-1',
+      softwareId: 'qvet-v1.0'
+    });
+    const rejection = expect(polling).rejects.toThrow('Failed polling conversion response after 1 attempts');
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(jest.getTimerCount()).toBe(0);
+    await jest.runAllTimersAsync();
+    await rejection;
+    jest.useRealTimers();
+  });
+
 
   it('patches promoted conversion resources through the canonical digital twin endpoint', async () => {
     client.setIdToken('session-id-1');

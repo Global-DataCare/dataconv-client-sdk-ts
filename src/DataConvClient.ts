@@ -885,6 +885,8 @@ export class DataConvClient {
         return response.data as T;
       }
 
+      if (attempt === this.retryTimes - 1) break;
+
       const retryAfter = headerValue(response.headers, 'retry-after');
       const retrySeconds = retryAfter ? Number(retryAfter) : undefined;
       const delayMs = retrySeconds !== undefined && !Number.isNaN(retrySeconds)

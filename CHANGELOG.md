@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.4.8 - 2026-09-19
+
+- Stop a bounded poll immediately after its final unsuccessful request instead
+  of sleeping for `Retry-After` when no further attempt will be made. This
+  keeps one-shot asynchronous job-status checks responsive without changing
+  multi-attempt retry behavior.
+
 ## 0.4.7 - 2026-09-15
 
 - Use the actor-neutral ResearchStudy RFC 8693 exchange route for both exact
