@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Bound CLI upload-response polling to the same three-attempt default as the
+  SDK client; `DATACONV_RETRY_TIMES` remains an explicit override.
+
 ## 0.5.0 - 2026-09-19
 
 - Add `searchConversionJobs()` for the shared, study-scoped DataConv job
