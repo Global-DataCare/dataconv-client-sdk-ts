@@ -566,7 +566,7 @@ async function cmdUpload(args: string[], statePath: string, currentState?: CliSt
     baseUrl: state.baseUrl,
     idToken: state.idToken,
     vpToken: state.vpToken,
-    retryTimes: Number(process.env.DATACONV_RETRY_TIMES || 60),
+    retryTimes: Number(process.env.DATACONV_RETRY_TIMES || 3),
     retryDelayMs: Number(process.env.DATACONV_RETRY_DELAY_MS || 2000)
   });
 
