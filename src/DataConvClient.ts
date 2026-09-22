@@ -21,6 +21,7 @@ import { buildAttachment, buildEnvelope, buildMultipartFormData, buildUploadExtr
 import { codingReviewPage } from './coding-review.js';
 import type {
   DataConvBatchOptions,
+  DataConvConversionEntry,
   ConversionResultEntry,
   ConvertedBundleResource,
   CreateTenantConfigOptions,
@@ -295,17 +296,32 @@ export class DataConvClient {
   getConversionEntry(
     response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse
   ): ConversionResultEntry | undefined {
-    const entries = response?.body?.data;
-    if (!Array.isArray(entries)) {
-      return undefined;
-    }
-    return entries.find((entry) => entry?.type === 'ConversionResult') as ConversionResultEntry | undefined;
+    return this.getConversionEntries(response)[0];
   }
 
+  /** Returns canonical primary entries from `body.data[]` without a result wrapper. */
+  getConversionEntries(
+    response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse
+  ): DataConvConversionEntry[] {
+    const entries = response?.body?.data;
+    return Array.isArray(entries) ? entries : [];
+  }
+
+  /** Returns successful primary resources from `body.data[].resource`. */
+  getSuccessfulConvertedResources(
+    response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse
+  ): ConvertedBundleResource[] {
+    return this.getConversionEntries(response)
+      .filter((entry) => typeof entry.response?.status === 'string' && entry.response.status.startsWith('2'))
+      .map((entry) => entry.resource)
+      .filter((resource): resource is ConvertedBundleResource => !!resource && typeof resource === 'object');
+  }
+
+  /** @deprecated Read `body.data[]` with `getConversionEntries` instead. */
   getConvertedBundle(
     response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse
-  ): ConvertedBundleResource | undefined {
-    return this.getConversionEntry(response)?.resource;
+  ): DataConvDidCommResponse<ConvertedBundleResource>['body'] | undefined {
+    return response?.body;
   }
 
   getCodingReviewPage(

@@ -1,6 +1,6 @@
 // Flow contract: reuse shared test fixtures and canonical types; do not introduce duplicated literals.
-// 1. The conversion response remains the server's single ConversionResult Bundle.
-// 2. The browser derives bounded local pages from codingProposals without inventing a server cursor.
+// 1. Each converted primary resource remains directly at body.data[].resource.
+// 2. The browser derives bounded local pages from resource.contained[].meta.codingProposals without inventing a server cursor.
 // 3. A human correction sends only the codingReviews shape accepted by DataConv.
 // 4. Proposal and draft states remain explicit until the server confirms promotion.
 
@@ -45,18 +45,12 @@ function conversionResponse(): DataConvDidCommResponse<ConvertedBundleResource> 
       type: 'batch-response',
       total: 1,
       data: [{
-        type: 'ConversionResult',
         response: { status: '200' },
         resource: {
-          resourceType: 'Bundle',
-          type: 'batch',
-          total: 1,
-          data: [{
-            resource: {
-              resourceType: 'ResearchSubject',
-              id: 'subject-1',
-              meta: { claims: { 'ResearchSubject.userSelected': 'true' } },
-              contained: [{
+          resourceType: 'ResearchSubject',
+          id: 'subject-1',
+          meta: { claims: { 'ResearchSubject.userSelected': 'true' } },
+          contained: [{
                 resourceType: 'Condition',
                 id: 'condition-1',
                 meta: {
@@ -93,8 +87,6 @@ function conversionResponse(): DataConvDidCommResponse<ConvertedBundleResource> 
                   }]
                 }
               }]
-            }
-          }]
         }
       }]
     }

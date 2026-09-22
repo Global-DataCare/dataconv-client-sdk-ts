@@ -3,6 +3,8 @@ export { DidCommMessage, DidCommAttachment } from 'gdc-common-utils-ts/utils/did
 export type {
   ConversionResultEntry,
   ConvertedBundleResource,
+  DataConvConversionEntry,
+  DataConvConvertedResource,
   CreateTenantConfigEntry,
   CreateTenantConfigOptions,
   DataConvClientConfig,

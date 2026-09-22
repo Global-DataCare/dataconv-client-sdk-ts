@@ -283,7 +283,8 @@ const conversionResponse = await client.pollUploadResponse({
   softwareId: 'api-config'
 });
 
-const convertedBundle = client.getConvertedBundle(conversionResponse);
+const convertedEntries = client.getConversionEntries(conversionResponse);
+const convertedResources = client.getSuccessfulConvertedResources(conversionResponse);
 const mainDiagnostic = client.getMainDiagnosticInfoByResponse(conversionResponse);
 const storedConfigs = client.getSuccessfulTenantConfigs(configResponse);
 
@@ -320,11 +321,13 @@ For DIDComm polling responses, the SDK also exposes:
 
 ## Human coding review in a portal
 
-The current DataConv `_upload-response` returns one `ConversionResult` whose
-`resource` is the complete generated Bundle. It does not expose a server page
-or cursor. `getCodingReviewPage()` therefore creates a bounded (maximum 100
-items), one-based local page from the `meta.codingProposals[]` entries already
-present in that response. It does not modify the response object.
+DataConv `_upload-response` returns every primary converted resource directly
+in `body.data[].resource`. A ResearchSubject's terminology candidates therefore
+live at `body.data[].resource.contained[].meta.codingProposals[]`; there is no
+`ConversionResult` wrapper and no nested `resource.data[]` Bundle. The endpoint
+does not expose a server page or cursor. `getCodingReviewPage()` creates a
+bounded (maximum 100 items), one-based local page over those proposals without
+modifying the response object.
 
 Each returned UI row identifies the subject, generated resource and proposal.
 Its `state` is the server proposal state (`proposed` or `accepted`), while
