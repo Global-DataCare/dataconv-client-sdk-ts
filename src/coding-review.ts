@@ -121,10 +121,11 @@ function reviewRowsForResource(
 /**
  * Builds an immutable, bounded client-side page over DataConv coding proposals.
  *
- * The current Python `_upload-response` wire contract returns one
- * `ConversionResult` containing the complete generated Bundle. Consequently
- * this helper does not send or claim a server cursor: it pages the returned
- * `meta.codingProposals[]` entries deterministically for portal rendering.
+ * DataConv `_upload-response` returns every converted primary resource directly
+ * at `body.data[].resource`. Coding proposals belong to each primary resource
+ * or its `contained[]` resources at `meta.codingProposals[]`. This helper does
+ * not send or claim a server cursor: it pages those returned proposals
+ * deterministically for portal rendering.
  */
 export function codingReviewPage(
   response: DataConvDidCommResponse<ConvertedBundleResource> | undefined,
@@ -139,11 +140,7 @@ export function codingReviewPage(
     throw new Error(`pageSize must be between 1 and ${MAX_PAGE_SIZE}`);
   }
 
-  const conversionEntry = Array.isArray(response?.body?.data)
-    ? response.body.data.find((entry) => entry?.type === 'ConversionResult')
-    : undefined;
-  const bundle = record(conversionEntry?.resource);
-  const primaryEntries = Array.isArray(bundle?.data) ? bundle.data : [];
+  const primaryEntries = Array.isArray(response?.body?.data) ? response.body.data : [];
   const rows: DataConvCodingReviewRow[] = [];
 
   for (const primaryEntry of primaryEntries) {

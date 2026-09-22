@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Read converted primary resources directly from `body.data[].resource` and
+  coding proposals from `resource.contained[].meta.codingProposals[]`; reject
+  the former nested `ConversionResult.resource.data[]` assumption.
+- Add `getConversionEntries()` and `getSuccessfulConvertedResources()` as the
+  canonical response helpers; retain the old result names only as deprecated
+  source-compatibility aliases.
 - Bound CLI upload-response polling to the same three-attempt default as the
   SDK client; `DATACONV_RETRY_TIMES` remains an explicit override.
 

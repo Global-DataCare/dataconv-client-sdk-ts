@@ -381,7 +381,7 @@ describe('DataConvClient', () => {
     expect(payloadJson.sourceFormat).toBe('excel');
   });
 
-  it('polls conversion responses and extracts the converted bundle', async () => {
+  it('polls conversion responses and exposes canonical primary resources without a nested result bundle', async () => {
     const payload: DataConvDidCommResponse<ConvertedBundleResource> = {
       thid: 'up-1',
       iss: 'did:web:globaldatacare.es:employee:preconversion',
@@ -405,7 +405,6 @@ describe('DataConvClient', () => {
         },
         data: [
           {
-            type: 'ConversionResult',
             response: {
               status: '200',
               outcome: {
@@ -420,10 +419,8 @@ describe('DataConvClient', () => {
               }
             },
             resource: {
-              resourceType: 'Bundle',
-              type: 'batch',
-              total: 1,
-              data: [{ resource: { resourceType: 'Patient', id: 'patient-1' } }]
+              resourceType: 'Patient',
+              id: 'patient-1'
             }
           }
         ]
@@ -441,8 +438,12 @@ describe('DataConvClient', () => {
 
     expect(response).toEqual(payload);
     expect(client.getLastConversionResponse()).toEqual(payload);
+    expect(client.getConversionEntries()).toEqual(payload.body?.data);
+    expect(client.getSuccessfulConvertedResources()).toEqual([
+      { resourceType: 'Patient', id: 'patient-1' }
+    ]);
     expect(client.getConversionEntry()?.response?.status).toBe('200');
-    expect(client.getConvertedBundle()).toEqual(payload.body?.data?.[0]?.resource);
+    expect(client.getConversionEntry()?.resource).not.toHaveProperty('data');
     expect(client.getMainDiagnosticInfoByResponse(response)).toBe(
       'Job status: succeeded. Se han procesado 500 registros.'
     );
@@ -459,7 +460,6 @@ describe('DataConvClient', () => {
         total: 1,
         data: [
           {
-            type: 'ConversionResult',
             response: {
               status: '500',
               outcome: {
@@ -575,7 +575,7 @@ describe('DataConvClient', () => {
       .mockResolvedValueOnce(createMockResponse(202, new Headers({ 'retry-after': '0' }), {}))
       .mockResolvedValueOnce(createMockResponse(200, new Headers({ 'content-type': 'application/json' }), {
         thid: 'up-1',
-        body: { data: [{ type: 'ConversionResult', response: { status: '200' }, resource: { resourceType: 'Bundle' } }] }
+        body: { data: [{ response: { status: '200' }, resource: { resourceType: 'ResearchSubject' } }] }
       }));
 
     const response = await fetchClient.pollUploadResponse({
@@ -585,7 +585,7 @@ describe('DataConvClient', () => {
 
     expect(response.thid).toBe('up-1');
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(fetchClient.getConversionEntry(response)?.type).toBe('ConversionResult');
+    expect(fetchClient.getConversionEntry(response)?.resource?.resourceType).toBe('ResearchSubject');
   });
 
   it('does not wait for Retry-After after the final bounded polling attempt', async () => {
@@ -839,9 +839,8 @@ describe('DataConvClient', () => {
           body: {
             data: [
               {
-                type: 'ConversionResult',
                 response: { status: '200' },
-                resource: { resourceType: 'Bundle', total: 1 }
+                resource: { resourceType: 'ResearchSubject', id: 'subject-1' }
               }
             ]
           }

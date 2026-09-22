@@ -131,15 +131,19 @@ export interface DataConvDidCommResponse<TResource = unknown> {
   [key: string]: unknown;
 }
 
-export interface ConvertedBundleResource {
+/** One primary resource returned directly in `body.data[].resource`. */
+export interface DataConvConvertedResource {
   resourceType?: string;
-  type?: string;
-  total?: number;
-  data?: Array<Record<string, unknown>>;
   [key: string]: unknown;
 }
 
-export type ConversionResultEntry = TenantAdapterConfigEntry<ConvertedBundleResource>;
+export type DataConvConversionEntry = TenantAdapterConfigEntry<DataConvConvertedResource>;
+
+/** @deprecated Use `DataConvConvertedResource`; conversion results are not nested Bundles. */
+export type ConvertedBundleResource = DataConvConvertedResource;
+
+/** @deprecated Use `DataConvConversionEntry`; there is no `ConversionResult` wrapper. */
+export type ConversionResultEntry = DataConvConversionEntry;
 
 export interface DataConvClientConfig {
   issuerDid: string;
