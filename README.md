@@ -353,9 +353,11 @@ modifying the response object.
 
 Each returned UI row identifies the subject, generated resource and proposal.
 Its `state` is the server proposal state (`proposed` or `accepted`), while
-`draftState` is derived from the resource's `<Resource>.userSelected` claim
-(`draft`, `promoted` or `unknown`). No spreadsheet row number is exposed by the
-current API, so the SDK does not manufacture one.
+the compatibility `draftState` is derived only from that proposal state. The
+resource's `userSelected` claim is coding provenance, never workflow state.
+Pending proposals are returned by default; pass `includeReviewed: true` only
+for audit/history. No spreadsheet row number is exposed by the current API, so
+the SDK does not manufacture one.
 
 ```ts
 const page = client.getCodingReviewPage(conversionResponse, {
@@ -423,6 +425,9 @@ resources. The SDK does not expose a JSON:API variant; that can be added later
 as an edge adapter without replacing the canonical job contract. Polling uses
 at most three attempts by default, after which callers can keep working and
 query this history later.
+Failed job discovery preserves one bounded OperationOutcome diagnostic in the
+thrown server-side error so a BFF can log the actual authorization or contract
+failure without serializing tokens or response bodies.
 
 Only `body.codingReviews[]` is currently accepted for terminology corrections:
 each decision selects one candidate already belonging to the proposal. The

@@ -955,7 +955,7 @@ export class DataConvClient {
       },
     });
     if (response.status !== 200) {
-      throw new Error(`Unexpected searchConversionJobs response status: ${response.status}`);
+      throw unexpectedResponseError('searchConversionJobs', response.status, response.data);
     }
     return response.data as DataConvSearchBundle<DataConvTaskResource>;
   }
