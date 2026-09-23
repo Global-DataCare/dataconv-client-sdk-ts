@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from 'axios';
-import { DEFAULT_SECTOR, DEFAULT_UPLOAD_BODY } from './client/constants.js';
+import { DEFAULT_REQUEST_TIMEOUT_MS, DEFAULT_SECTOR, DEFAULT_UPLOAD_BODY } from './client/constants.js';
 import {
   buildUrl,
   createUuid,
@@ -46,6 +46,7 @@ import type {
   DataConvOperationOutcome,
   DataConvOrganizationTenantActivationOptions,
   DataConvOrganizationTenantActivationResult,
+  DataConvOrganizationTenantStatusResult,
   DataConvPatchOptions,
   DataConvPatchResponse,
   DataConvSearchBundle,
@@ -69,6 +70,7 @@ export class DataConvClient {
   private readonly baseUrl: string;
   private readonly retryTimes: number;
   private readonly retryDelayMs: number;
+  private readonly requestTimeoutMs: number;
   private readonly defaultExpSeconds: number;
 
   private idToken?: string;
@@ -85,6 +87,7 @@ export class DataConvClient {
     this.httpClient = config.httpClient ?? (config.fetch ? undefined : axios.create({ baseURL: this.baseUrl }));
     this.retryTimes = config.retryTimes ?? 3;
     this.retryDelayMs = config.retryDelayMs ?? 1000;
+    this.requestTimeoutMs = normalizeRequestTimeoutMs(config.requestTimeoutMs);
     this.defaultExpSeconds = config.defaultExpSeconds ?? 300;
     this.idToken = config.idToken;
     this.vpToken = config.vpToken;
@@ -124,6 +127,32 @@ export class DataConvClient {
       throw new Error(detail || `Unexpected activateOrganizationTenant response status: ${response.status}`);
     }
     return response.data as DataConvOrganizationTenantActivationResult;
+  }
+
+  /**
+   * Checks the scoped DataConv control-plane record without creating it.
+   * Authentication uses the same current OIDC identity and ICA controller
+   * proof as activation, so tenant identifiers cannot be enumerated publicly.
+   */
+  async getOrganizationTenantStatus(
+    options: DataConvOrganizationTenantActivationOptions
+  ): Promise<DataConvOrganizationTenantStatusResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/organization/tenant/_status`,
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        id_token: requireText(options.idToken, 'idToken'),
+        vp_token: requireText(options.vpToken, 'vpToken')
+      }
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('getOrganizationTenantStatus', response.status, response.data);
+    }
+    return response.data as DataConvOrganizationTenantStatusResult;
   }
 
   getLastTenantConfigResponse(): DataConvDidCommResponse<TenantAdapterConfigResource> | undefined {
@@ -968,6 +997,7 @@ export class DataConvClient {
         url: options.url,
         data: options.body,
         headers,
+        timeout: this.requestTimeoutMs,
         validateStatus: () => true
       });
 
@@ -982,17 +1012,25 @@ export class DataConvClient {
       throw new Error('No HTTP transport available: provide axios httpClient or fetch implementation');
     }
 
-    const response = await this.fetchFn(buildUrl(this.baseUrl, options.url), {
-      method: options.method,
-      headers,
-      body: options.body === undefined
-        ? undefined
-        : isFormData(options.body)
-          ? options.body
-          : typeof options.body === 'string'
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), this.requestTimeoutMs);
+    let response: Response;
+    try {
+      response = await this.fetchFn(buildUrl(this.baseUrl, options.url), {
+        method: options.method,
+        headers,
+        signal: abortController.signal,
+        body: options.body === undefined
+          ? undefined
+          : isFormData(options.body)
             ? options.body
-              : JSON.stringify(options.body)
-    });
+            : typeof options.body === 'string'
+              ? options.body
+                : JSON.stringify(options.body)
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const contentType = response.headers.get('content-type') || '';
     const data = contentType.includes('json') ? await response.json() : await response.text();
@@ -1012,6 +1050,14 @@ export class DataConvClient {
       currentVpToken: this.vpToken
     };
   }
+}
+
+function normalizeRequestTimeoutMs(value: number | undefined): number {
+  if (value === undefined) return DEFAULT_REQUEST_TIMEOUT_MS;
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError('requestTimeoutMs must be a positive integer');
+  }
+  return value;
 }
 
 /**

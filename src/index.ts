@@ -45,6 +45,7 @@ export type {
   DataConvOperationOutcomeIssue,
   DataConvOrganizationTenantActivationOptions,
   DataConvOrganizationTenantActivationResult,
+  DataConvOrganizationTenantStatusResult,
   DataConvResearchFieldMapping,
   DataConvResearchWorkbookInspection,
   DataConvPatchOptions,
