@@ -154,6 +154,8 @@ export interface DataConvClientConfig {
   baseUrl?: string;
   retryTimes?: number;
   retryDelayMs?: number;
+  /** Maximum wall-clock time for one HTTP request. Defaults to 20 seconds. */
+  requestTimeoutMs?: number;
   defaultExpSeconds?: number;
   defaultDidCommType?: string;
   defaultSourceFormat?: SourceFormat;
@@ -183,6 +185,15 @@ export interface DataConvOrganizationTenantActivationResult {
   controller?: string;
   credentialIds?: string[];
   revision?: number;
+}
+
+export interface DataConvOrganizationTenantStatusResult {
+  active: boolean;
+  status: 'ready' | 'not-configured';
+  tenantId: string;
+  networkKind: string;
+  jurisdiction: string;
+  sector: string;
 }
 
 export interface DataConvResearchFieldMapping {

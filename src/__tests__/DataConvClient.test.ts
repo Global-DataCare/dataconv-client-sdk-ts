@@ -85,8 +85,36 @@ describe('DataConvClient', () => {
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
       url: '/publisher/cds-CA-BC/v1/animal-research/7654321/organization/tenant/_activate',
-      data: { id_token: 'signed-id-token', vp_token: 'signed-controller-vp' }
+      data: { id_token: 'signed-id-token', vp_token: 'signed-controller-vp' },
+      timeout: 20_000
     }));
+  });
+
+  it('uses the configured bounded timeout for DataConv HTTP requests', async () => {
+    const boundedClient = new DataConvClient({
+      issuerDid: 'did:web:clinic.example:employee:it:loader',
+      tenantId: 'clinic-demo',
+      jurisdiction: 'ES',
+      requestTimeoutMs: 125
+    });
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        active: true,
+        tenantId: 'clinic-demo',
+        networkKind: 'test-network',
+        jurisdiction: 'ES',
+        sector: 'onehealth-research'
+      }
+    });
+
+    await boundedClient.activateOrganizationTenant({
+      idToken: 'signed-id-token',
+      vpToken: 'signed-controller-vp'
+    });
+
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({ timeout: 125 }));
   });
 
   it('preserves the server detail when organization tenant activation is rejected', async () => {
@@ -102,6 +130,36 @@ describe('DataConvClient', () => {
       idToken: 'signed-id-token',
       vpToken: 'signed-controller-vp'
     })).rejects.toThrow('Controller VP aud does not authorize this service.');
+  });
+
+  it('checks whether the scoped organization tenant is ready before research use', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        active: false,
+        status: 'not-configured',
+        tenantId: '7654321',
+        networkKind: 'test-network',
+        jurisdiction: 'CA-BC',
+        sector: 'animal-research'
+      }
+    });
+
+    const result = await client.getOrganizationTenantStatus({
+      tenantId: '7654321',
+      jurisdiction: 'CA-BC',
+      sector: 'animal-research',
+      idToken: 'signed-id-token',
+      vpToken: 'signed-controller-vp'
+    });
+
+    expect(result.status).toBe('not-configured');
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/publisher/cds-CA-BC/v1/animal-research/7654321/organization/tenant/_status',
+      data: { id_token: 'signed-id-token', vp_token: 'signed-controller-vp' }
+    }));
   });
 
   it('creates tenant config requests', async () => {

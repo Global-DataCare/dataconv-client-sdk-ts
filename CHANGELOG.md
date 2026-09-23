@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Bound every DataConv HTTP request to 20 seconds by default and expose the
+  `requestTimeoutMs` client option for deployment-specific budgets. The bound
+  applies equally to Axios and Fetch transports so a failed dependency cannot
+  leave portal flows pending indefinitely.
+- Added `getOrganizationTenantStatus()` so authenticated controller portals
+  can distinguish a ready tenant from a retryable missing scoped record before
+  starting research work.
 - Read converted primary resources directly from `body.data[].resource` and
   coding proposals from `resource.contained[].meta.codingProposals[]`; reject
   the former nested `ConversionResult.resource.data[]` assumption.

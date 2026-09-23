@@ -51,6 +51,28 @@ npm install dataconv-client-sdk-ts
 DATACONV_BASE_URL=http://localhost:8080
 ```
 
+Every HTTP request is bounded to 20 seconds by default. Set
+`requestTimeoutMs` on `DataConvClient` only when a deployment needs a different
+per-request budget; polling attempts remain controlled separately by
+`retryTimes` and `retryDelayMs`.
+
+## Organization tenant readiness
+
+DataConv service provisioning is independent from organization registration
+and controller DCR. A controller-facing BFF can check the scoped service record
+with the current OIDC identity and ICA proof, then explicitly retry the
+idempotent activation when it is absent:
+
+```ts
+const status = await client.getOrganizationTenantStatus({ idToken, vpToken });
+if (status.status === 'not-configured') {
+  await client.activateOrganizationTenant({ idToken, vpToken });
+}
+```
+
+Neither method grants ResearchStudy access. Study membership, Consent and the
+study-scoped SMART exchange remain separate authorization boundaries.
+
 ---
 
 ## Discover form fields
