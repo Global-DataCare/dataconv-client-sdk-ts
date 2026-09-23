@@ -80,17 +80,13 @@ function codingProposal(value: unknown): DataConvCodingProposal | undefined {
       ? item.candidates.map(candidate).filter((entry): entry is DataConvCodingCandidate => !!entry)
       : [],
     ...(text(item.selectedCandidateId) ? { selectedCandidateId: text(item.selectedCandidateId) } : {}),
-    ...(text(item.reviewedAt) ? { reviewedAt: text(item.reviewedAt) } : {})
+    ...(text(item.reviewedAt) ? { reviewedAt: text(item.reviewedAt) } : {}),
+    ...(item.userSelected === true ? { userSelected: true } : {})
   };
 }
 
-function draftState(resource: Record<string, unknown>, resourceType: string): DataConvReviewDraftState {
-  const meta = record(resource.meta);
-  const claims = record(meta?.claims);
-  const selected = text(claims?.[`${resourceType}.userSelected`]).toLowerCase();
-  if (selected === 'true') return 'draft';
-  if (selected === 'false') return 'promoted';
-  return 'unknown';
+function draftState(status: DataConvCodingProposalStatus): DataConvReviewDraftState {
+  return status === 'proposed' ? 'draft' : 'promoted';
 }
 
 function reviewRowsForResource(
@@ -114,7 +110,7 @@ function reviewRowsForResource(
       resourceId,
       proposalId: entry.id,
       state: entry.status,
-      draftState: draftState(resource, resourceType)
+      draftState: draftState(entry.status)
     }));
 }
 
@@ -157,11 +153,12 @@ export function codingReviewPage(
     }
   }
 
-  const total = rows.length;
+  const reviewRows = options.includeReviewed ? rows : rows.filter(row => row.status === 'proposed');
+  const total = reviewRows.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
   const start = (page - 1) * pageSize;
   return deepFreeze({
-    items: rows.slice(start, start + pageSize),
+    items: reviewRows.slice(start, start + pageSize),
     page,
     pageSize,
     total,

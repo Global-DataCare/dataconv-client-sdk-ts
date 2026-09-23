@@ -2,7 +2,7 @@
 // 1. Each converted primary resource remains directly at body.data[].resource.
 // 2. The browser derives bounded local pages from resource.contained[].meta.codingProposals without inventing a server cursor.
 // 3. A human correction sends only the codingReviews shape accepted by DataConv.
-// 4. Proposal and draft states remain explicit until the server confirms promotion.
+// 4. Pending state comes only from proposal status; userSelected is coding provenance, never workflow state.
 
 import axios from 'axios';
 import { DataConvClient } from '../DataConvClient';
@@ -79,6 +79,7 @@ function conversionResponse(): DataConvDidCommResponse<ConvertedBundleResource> 
                   codingProposals: [{
                     id: 'proposal-2',
                     status: 'accepted',
+                    userSelected: true,
                     selectedCandidateId: 'candidate-procedure',
                     field: 'Procedure.code',
                     inputText: 'ear cleaning',
@@ -160,10 +161,10 @@ describe('DataConv coding review contract', () => {
     expect(firstPage).toMatchObject({
       page: 1,
       pageSize: 1,
-      total: 2,
-      totalPages: 2,
+      total: 1,
+      totalPages: 1,
       hasPreviousPage: false,
-      hasNextPage: true
+      hasNextPage: false
     });
     expect(firstPage.items[0]).toMatchObject({
       subjectResourceType: 'ResearchSubject',
@@ -174,12 +175,7 @@ describe('DataConv coding review contract', () => {
       state: 'proposed',
       draftState: 'draft'
     });
-    expect(secondPage.items[0]).toMatchObject({
-      resourceType: 'Procedure',
-      proposalId: 'proposal-2',
-      state: 'accepted',
-      draftState: 'promoted'
-    });
+    expect(secondPage.items).toEqual([]);
 
     expect(Object.isFrozen(firstPage)).toBe(true);
     expect(Object.isFrozen(firstPage.items)).toBe(true);
@@ -191,6 +187,16 @@ describe('DataConv coding review contract', () => {
       (firstPage.items[0].rowContext as Record<string, string>).species = 'mutated-in-ui';
     }).toThrow(TypeError);
     expect(client.getCodingReviewPage(sourceResponse).items[0].rowContext.species).toBe('canine');
+  });
+
+  it('can include reviewed proposals without deriving workflow from userSelected', () => {
+    const client = createClient();
+    const page = client.getCodingReviewPage(conversionResponse(), { includeReviewed: true });
+
+    expect(page.items).toHaveLength(2);
+    expect(page.items[0]).toMatchObject({ proposalId: 'proposal-1', draftState: 'draft' });
+    expect(page.items[1]).toMatchObject({ proposalId: 'proposal-2', draftState: 'promoted' });
+    expect(page.items[1].userSelected).toBe(true);
   });
 
   it('rejects unsafe pagination inputs instead of allocating or silently truncating them', () => {

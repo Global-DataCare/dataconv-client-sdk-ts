@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Treat `meta.codingProposals[].status` as the only coding-review workflow
+  state; return unresolved proposals by default and retain reviewed proposals
+  only when explicitly requested for audit.
+- Preserve per-proposal professional `userSelected` provenance and bounded
+  OperationOutcome diagnostics for persisted job discovery failures.
+
 - Bound every DataConv HTTP request to 20 seconds by default and expose the
   `requestTimeoutMs` client option for deployment-specific budgets. The bound
   applies equally to Axios and Fetch transports so a failed dependency cannot

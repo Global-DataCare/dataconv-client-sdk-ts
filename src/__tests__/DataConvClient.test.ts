@@ -826,6 +826,23 @@ describe('DataConvClient', () => {
     })).rejects.toThrow('count must be between 1 and 100');
   });
 
+  it('preserves a bounded OperationOutcome diagnostic when job discovery fails', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 403,
+      headers: {},
+      data: {
+        resourceType: 'OperationOutcome',
+        issue: [{ diagnostics: 'ResearchStudy read access is required for this organization' }],
+      },
+    });
+
+    await expect(client.searchConversionJobs({
+      researchStudy: { reference: 'ResearchStudy/study-2026-01' },
+    })).rejects.toThrow(
+      'Unexpected searchConversionJobs response status: 403. ResearchStudy read access is required for this organization',
+    );
+  });
+
   it('normalizes FHIR search parameter names to lowercase before sending the request', async () => {
     client.setIdToken('session-id-1');
     mockedAxios.request.mockResolvedValueOnce({

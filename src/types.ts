@@ -469,6 +469,8 @@ export interface DataConvCodingProposal {
   readonly candidates: readonly DataConvCodingCandidate[];
   readonly selectedCandidateId?: string;
   readonly reviewedAt?: string;
+  /** True only after an authorized professional explicitly selects this proposal's code. */
+  readonly userSelected?: boolean;
 }
 
 /** Exact human-selection shape consumed by `body.codingReviews[]`. */
@@ -502,6 +504,8 @@ export interface DataConvCodingReviewPageOptions {
   page?: number;
   /** Bounded to 1..100 because upload-response currently returns one full Bundle. */
   pageSize?: number;
+  /** Include accepted proposals for audit/history. Defaults to unresolved proposals only. */
+  includeReviewed?: boolean;
 }
 
 export interface DataConvCodingReviewPage {
