@@ -9,7 +9,8 @@ import { DataConvClient } from '../DataConvClient';
 import type {
   DataConvCodingReview,
   DataConvDidCommResponse,
-  ConvertedBundleResource
+  ConvertedBundleResource,
+  DataConvSearchBundle
 } from '../types';
 
 jest.mock('axios');
@@ -187,6 +188,26 @@ describe('DataConv coding review contract', () => {
       (firstPage.items[0].rowContext as Record<string, string>).species = 'mutated-in-ui';
     }).toThrow(TypeError);
     expect(client.getCodingReviewPage(sourceResponse).items[0].rowContext.species).toBe('canine');
+  });
+
+  it('builds the same review page from durable ResearchSubject search results', () => {
+    const client = createClient();
+    const direct = conversionResponse().body?.data?.[0]?.resource;
+    const durable: DataConvSearchBundle<ConvertedBundleResource> = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: direct }],
+    };
+
+    const page = client.getCodingReviewPage(durable, { page: 1, pageSize: 25 });
+
+    expect(page.total).toBe(1);
+    expect(page.items[0]).toMatchObject({
+      subjectId: 'subject-1',
+      resourceId: 'condition-1',
+      proposalId: 'proposal-1',
+    });
   });
 
   it('can include reviewed proposals without deriving workflow from userSelected', () => {

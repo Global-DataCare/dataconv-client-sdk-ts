@@ -7,6 +7,7 @@ import type {
   DataConvCodingReviewPageOptions,
   DataConvCodingReviewRow,
   DataConvDidCommResponse,
+  DataConvSearchBundle,
   DataConvReviewDraftState
 } from './types.js';
 
@@ -124,7 +125,7 @@ function reviewRowsForResource(
  * deterministically for portal rendering.
  */
 export function codingReviewPage(
-  response: DataConvDidCommResponse<ConvertedBundleResource> | undefined,
+  response: DataConvDidCommResponse<ConvertedBundleResource> | DataConvSearchBundle<ConvertedBundleResource> | undefined,
   options: DataConvCodingReviewPageOptions = {}
 ): DataConvCodingReviewPage {
   const page = options.page ?? 1;
@@ -136,7 +137,13 @@ export function codingReviewPage(
     throw new Error(`pageSize must be between 1 and ${MAX_PAGE_SIZE}`);
   }
 
-  const primaryEntries = Array.isArray(response?.body?.data) ? response.body.data : [];
+  const responseRecord = record(response);
+  const body = record(responseRecord?.body);
+  const primaryEntries = Array.isArray(body?.data)
+    ? body.data
+    : Array.isArray(responseRecord?.entry)
+      ? responseRecord.entry
+      : [];
   const rows: DataConvCodingReviewRow[] = [];
 
   for (const primaryEntry of primaryEntries) {

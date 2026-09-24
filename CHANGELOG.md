@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.5 - 2026-09-23
+
+- Add study-scoped durable coding-review preparation, lookup and submission
+  methods that do not require an import thread or retained job result.
+- Allow `getCodingReviewPage()` to project the same proposal rows from a FHIR
+  searchset of stored ResearchSubject drafts.
+
 ## 0.5.4 - 2026-09-23
 
 - Treat `meta.codingProposals[].status` as the only coding-review workflow

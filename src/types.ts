@@ -583,6 +583,45 @@ export interface DataConvJobSearchOptions {
   idToken?: string;
 }
 
+/** Study-scoped lookup of durable ResearchSubject drafts awaiting coding review. */
+export interface DataConvPendingCodingReviewSearchOptions extends DataConvJobSearchOptions {}
+
+export interface DataConvPrepareCodingReviewOptions {
+  alternateName?: string;
+  tenantId?: string;
+  jurisdiction?: string;
+  sector?: string;
+  researchStudy: DataConvFhirReference;
+  authorizationToken?: string;
+  idToken?: string;
+}
+
+export interface DataConvPrepareCodingReviewResult {
+  preparedSubjectCount: number;
+  proposalCount: number;
+  candidateCount: number;
+}
+
+/** Explicit human decisions applied to durable drafts independently of job retention. */
+export interface DataConvStudyCodingReviewOptions {
+  alternateName?: string;
+  tenantId?: string;
+  jurisdiction?: string;
+  sector?: string;
+  researchStudy: DataConvFhirReference;
+  authorizationToken?: string;
+  idToken?: string;
+  codingReviews: DataConvCodingReview[];
+}
+
+export interface DataConvStudyCodingReviewResult {
+  status: 'pending-review' | 'success';
+  reviewedProposalCount: number;
+  promotedSubjectCount: number;
+  pendingSubjectCount: number;
+  [key: string]: unknown;
+}
+
 export interface DataConvBatchOptions extends DataConvPatchOptions {}
 
 export interface DataConvCreateResult {

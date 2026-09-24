@@ -819,6 +819,82 @@ describe('DataConvClient', () => {
     }));
   });
 
+  it('loads and reviews durable study proposals without a conversion thread', async () => {
+    const researchStudy = { reference: 'ResearchStudy/study-2026-01' };
+    mockedAxios.request
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {},
+        data: { preparedSubjectCount: 1, proposalCount: 1, candidateCount: 2 }
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {},
+        data: { resourceType: 'Bundle', type: 'searchset', total: 0, entry: [] }
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {},
+        data: { status: 'success', reviewedProposalCount: 1, promotedSubjectCount: 1 }
+      });
+
+    await client.preparePendingCodingReviews({
+      researchStudy,
+      authorizationToken: 'study-review-token',
+    });
+    await client.searchPendingCodingReviews({
+      researchStudy,
+      authorizationToken: 'study-review-token',
+      count: 25,
+      offset: 0,
+    });
+    await client.reviewPendingCodingProposals({
+      researchStudy,
+      authorizationToken: 'study-review-token',
+      codingReviews: [{
+        resourceType: 'Condition',
+        resourceId: 'condition-1',
+        proposalId: 'proposal-1',
+        selectedCandidateId: 'candidate-1',
+        reason: 'Confirmed',
+      }],
+    });
+
+    expect(mockedAxios.request.mock.calls[0]?.[0]).toMatchObject({
+      method: 'POST',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/$prepare-review',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer study-review-token',
+      },
+    });
+    expect(mockedAxios.request.mock.calls[1]?.[0]).toMatchObject({
+      method: 'POST',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/$review-pending',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer study-review-token',
+      },
+      data: {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'study', valueReference: researchStudy },
+          { name: '_count', valueInteger: 25 },
+          { name: '_offset', valueInteger: 0 },
+        ],
+      },
+    });
+    expect(mockedAxios.request.mock.calls[2]?.[0]).toMatchObject({
+      method: 'POST',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/$review',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer study-review-token',
+      },
+      data: expect.objectContaining({ researchStudy }),
+    });
+  });
+
   it('rejects a conversion job page larger than one hundred', async () => {
     await expect(client.searchConversionJobs({
       researchStudy: { reference: 'ResearchStudy/study-2026-01' },
