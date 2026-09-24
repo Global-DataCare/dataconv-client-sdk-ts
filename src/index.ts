@@ -48,6 +48,9 @@ export type {
   DataConvOrganizationTenantStatusResult,
   DataConvResearchFieldMapping,
   DataConvResearchWorkbookInspection,
+  DataConvTenantConfigCloneOptions,
+  DataConvTenantConfigSearchOptions,
+  DataConvTenantConfigCatalog,
   DataConvPatchOptions,
   DataConvPatchResponse,
   DataConvSearchBundle,
@@ -72,6 +75,7 @@ export type {
   DataConvMappingConfig
 } from './types.js';
 export { availableResearchSourceFields, inspectResearchWorkbook } from './workbook-inspection.js';
+export { cloneTenantConfig } from './tenant-config.js';
 export {
   SubjectFieldKeys,
   ProductFieldKeys,

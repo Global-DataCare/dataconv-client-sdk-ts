@@ -59,6 +59,8 @@ import type {
   DataConvStudyCodingReviewResult,
   DataConvTaskResource,
   DataConvTenantConfigPollOptions,
+  DataConvTenantConfigSearchOptions,
+  DataConvTenantConfigCatalog,
   DataConvUploadDidCommOptions,
   DataConvUploadResult,
   DataConvSupportedField,
@@ -543,6 +545,37 @@ export class DataConvClient {
     return this.createConfig(options);
   }
 
+  async listTenantConfigs(
+    options: DataConvTenantConfigSearchOptions
+  ): Promise<DataConvTenantConfigCatalog> {
+    const tenantId = resolveConfigTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const authorizationToken = requireText(options.authorizationToken, 'authorizationToken');
+    const body = {
+      ...(options.softwareId?.trim() ? { softwareId: options.softwareId.trim() } : {}),
+      _count: options.count ?? 20,
+      _offset: options.offset ?? 0,
+    };
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/config/_search`,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authorizationToken}`,
+      },
+      body,
+    });
+    if (response.status !== 200) {
+      throw new Error(`Unexpected listTenantConfigs response status: ${response.status}`);
+    }
+    const catalog = response.data as Partial<DataConvTenantConfigCatalog>;
+    return {
+      total: Number(catalog.total ?? 0),
+      data: Array.isArray(catalog.data) ? catalog.data : [],
+    };
+  }
+
   async createConfig(options: CreateTenantConfigOptions): Promise<DataConvCreateResult> {
     if (!Array.isArray(options.entries) || options.entries.length === 0) {
       throw new Error('entries is required and must contain at least one item');
@@ -566,7 +599,12 @@ export class DataConvClient {
     const response = await this.request({
       method: 'POST',
       url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/${softwareId}/config/_create`,
-      headers: { 'Content-Type': 'application/didcomm-plain+json' },
+      headers: {
+        'Content-Type': 'application/didcomm-plain+json',
+        ...(options.authorizationToken?.trim()
+          ? { Authorization: `Bearer ${options.authorizationToken.trim()}` }
+          : {}),
+      },
       body: envelope
     });
 
@@ -599,7 +637,12 @@ export class DataConvClient {
       async () => this.request({
         method: 'POST',
         url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/${softwareId}/config/_create-response?thid=${encodeURIComponent(thid)}`,
-        headers: { 'Content-Type': 'application/didcomm-plain+json' },
+        headers: {
+          'Content-Type': 'application/didcomm-plain+json',
+          ...(options.authorizationToken?.trim()
+            ? { Authorization: `Bearer ${options.authorizationToken.trim()}` }
+            : {}),
+        },
         body: buildEnvelope({
           iss: options.iss,
           thid,
@@ -631,7 +674,8 @@ export class DataConvClient {
       iss: options.iss,
       type: options.type,
       idToken: options.idToken,
-      vpToken: options.vpToken
+      vpToken: options.vpToken,
+      authorizationToken: options.authorizationToken
     });
   }
 

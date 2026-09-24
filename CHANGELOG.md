@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.6 - 2026-09-24
+
+- List tenant mapping configurations available to an authorized importer and
+  forward the caller's scoped bearer token when creating and polling a named copy.
+- Clone a catalog configuration without retaining server-owned id, revision or
+  audit fields, while replacing its field map with explicit UI choices.
+- Inspect the first worksheet with its name and up to three non-empty samples
+  per source column so portals can safely edit mappings before upload.
+- Report `dataHeaderRowIndex` with DataConv's one-based worksheet convention,
+  avoiding a saved copy that reads API-CONFIG mapping keys as source headers.
+
 ## 0.5.5 - 2026-09-23
 
 - Add study-scoped durable coding-review preparation, lookup and submission

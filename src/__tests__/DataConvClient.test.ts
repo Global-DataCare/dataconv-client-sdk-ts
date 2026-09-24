@@ -199,6 +199,44 @@ describe('DataConvClient', () => {
     }));
   });
 
+  it('lists only the authenticated tenant configuration catalog', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        total: 1,
+        data: [{
+          id: 'cfg-1',
+          tenantId: 'clinic-demo',
+          softwareId: 'pinol-vepahi-v2',
+          softwareVersion: 'v2',
+          content: {
+            mappingConfig: {
+              fieldMap: { 'Condition.code-text': 'Diagnostico' },
+            },
+          },
+        }],
+      },
+    });
+
+    const result = await client.listTenantConfigs({
+      authorizationToken: 'controller-token',
+      softwareId: 'pinol-vepahi',
+    });
+
+    expect(result.total).toBe(1);
+    expect(result.data[0]?.softwareVersion).toBe('v2');
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/config/_search',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer controller-token',
+      },
+      data: { softwareId: 'pinol-vepahi', _count: 20, _offset: 0 },
+    }));
+  });
+
   it('fetches the well-known api-config document and normalizes frontend fields', async () => {
     mockedAxios.request.mockResolvedValueOnce({
       status: 200,

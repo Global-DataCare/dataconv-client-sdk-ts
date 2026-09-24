@@ -31,6 +31,7 @@ not depend on React or React Native.
 - Discover frontend field descriptors from `/.well-known/api-config.json`
 - Track which fields have already been selected across UI dropdowns
 - Tenant/software configuration creation and polling
+- Controller-authorized configuration catalog and immutable mapping copies
 - Excel/XLSX upload via DIDComm attachment or `multipart/form-data`
 - `_upload-response` polling
 - Promotion through `Composition/_patch` and `Patient/_batch`
@@ -72,6 +73,39 @@ if (status.status === 'not-configured') {
 
 Neither method grants ResearchStudy access. Study membership, Consent and the
 study-scoped SMART exchange remain separate authorization boundaries.
+
+## Reuse and copy workbook mappings
+
+The catalog is tenant-scoped and requires a controller DataConv token carrying
+`dataconv.config`. It is not a FHIR search. A professional research token cannot
+list or copy organization mappings.
+
+```ts
+import { cloneTenantConfig, inspectResearchWorkbook } from 'dataconv-client-sdk-ts';
+
+const inspection = inspectResearchWorkbook(workbookBytes);
+const catalog = await client.listTenantConfigs({ authorizationToken });
+const source = catalog.data[0];
+const entry = cloneTenantConfig(source, {
+  softwareId: 'pinol-condition',
+  softwareVersion: 'v2',
+  mappings: inspection.mappings.map(mapping =>
+    mapping.sourceField === 'Diagnostico'
+      ? { ...mapping, serverField: 'Condition.code-text' }
+      : mapping
+  ),
+});
+await client.createTenantConfigAndWait({
+  authorizationToken,
+  entries: [entry],
+});
+```
+
+For the Pinol workbook, keep `Anamnesis -> concept`; changing
+`Diagnostico -> concept` would collide with that existing mapping. Use
+`Diagnostico -> Condition.code-text`. Free treatment text belongs in
+`Procedure.code-text`, not `code-display`, until a terminology code is
+professionally confirmed.
 
 ---
 

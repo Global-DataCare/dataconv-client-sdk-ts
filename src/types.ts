@@ -88,6 +88,7 @@ export interface TenantAdapterConfigResource<TFieldMap = FieldsGenericCare> {
   tenantId?: string;
   alternateName?: string;
   softwareId?: string;
+  softwareVersion?: string;
   country?: string;
   facilityId?: string;
   revision?: string;
@@ -204,9 +205,36 @@ export interface DataConvResearchFieldMapping {
 export interface DataConvResearchWorkbookInspection {
   mode: 'embedded-api-config' | 'manual-mapping';
   apiConfig?: string;
+  sheetName: string;
   sourceFields: string[];
   mappings: DataConvResearchFieldMapping[];
+  /** Up to three non-empty cells per source column, in workbook order. */
+  sampleValuesBySourceField: Record<string, string[]>;
+  /** One-based worksheet row containing the source-column headers. */
   dataHeaderRowIndex: number;
+}
+
+export interface DataConvTenantConfigCloneOptions {
+  softwareId: string;
+  softwareVersion?: string;
+  updatedBy?: string;
+  mappings: DataConvResearchFieldMapping[];
+}
+
+export interface DataConvTenantConfigSearchOptions {
+  alternateName?: string;
+  tenantId?: string;
+  jurisdiction?: string;
+  sector?: string;
+  authorizationToken: string;
+  softwareId?: string;
+  count?: number;
+  offset?: number;
+}
+
+export interface DataConvTenantConfigCatalog<TFieldMap = FieldsGenericCare> {
+  total: number;
+  data: TenantAdapterConfigResource<TFieldMap>[];
 }
 
 export interface CreateTenantConfigOptions<TFieldMap = FieldsGenericCare> {
@@ -222,6 +250,7 @@ export interface CreateTenantConfigOptions<TFieldMap = FieldsGenericCare> {
   exp?: number;
   idToken?: string;
   vpToken?: string;
+  authorizationToken?: string;
   entries: CreateTenantConfigEntry<TFieldMap>[];
 }
 
@@ -238,6 +267,7 @@ export interface DataConvTenantConfigPollOptions {
   exp?: number;
   idToken?: string;
   vpToken?: string;
+  authorizationToken?: string;
 }
 
 export interface DataConvUploadBaseOptions {

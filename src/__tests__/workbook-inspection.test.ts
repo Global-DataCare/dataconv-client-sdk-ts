@@ -22,6 +22,43 @@ it('reads API-CONFIG from cell A1 and pairs row two server fields with row three
     { serverField: 'date', sourceField: 'FECHA' },
     { serverField: 'DiagnosticReport.code-text', sourceField: 'DIAGNOSTICO' },
   ]);
+  expect(result.sheetName).toBe('Research');
+  expect(result.dataHeaderRowIndex).toBe(3);
+  expect(result.sampleValuesBySourceField).toEqual({
+    CHIP: ['chip-1'],
+    FECHA: ['2026-09-04'],
+    DIAGNOSTICO: ['Otitis'],
+  });
+});
+
+it('keeps the first three non-empty samples per source column for mapping previews', () => {
+  const result = inspectResearchWorkbook(workbookBytes([
+    ['A', 'B'],
+    ['one', ''],
+    ['', 'first'],
+    ['two', 'second'],
+    ['three', 'third'],
+    ['four', 'fourth'],
+  ]));
+
+  expect(result.sampleValuesBySourceField).toEqual({
+    A: ['one', 'two', 'three'],
+    B: ['first', 'second', 'third'],
+  });
+});
+
+it('preserves source column positions when an embedded mapping column is blank', () => {
+  const result = inspectResearchWorkbook(workbookBytes([
+    ['API-CONFIG:language=es:dataUse=secondary'],
+    ['subject_id', '', 'Condition.code-text'],
+    ['CHIP', '', 'DIAGNOSTICO'],
+    ['chip-1', 'ignored', 'Otitis'],
+  ]));
+
+  expect(result.sampleValuesBySourceField).toEqual({
+    CHIP: ['chip-1'],
+    DIAGNOSTICO: ['Otitis'],
+  });
 });
 
 it('uses row one as source fields and removes already mapped choices', () => {
@@ -31,6 +68,7 @@ it('uses row one as source fields and removes already mapped choices', () => {
   ]));
 
   expect(result.mode).toBe('manual-mapping');
+  expect(result.dataHeaderRowIndex).toBe(1);
   expect(result.sourceFields).toEqual(['CHIP', 'FECHA', 'DIAGNOSTICO']);
   expect(availableResearchSourceFields(result.sourceFields, [
     { serverField: 'subject_id', sourceField: 'CHIP' },

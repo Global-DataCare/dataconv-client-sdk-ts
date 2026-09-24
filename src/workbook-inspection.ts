@@ -8,6 +8,23 @@ function cells(row: unknown[] | undefined): string[] {
   return (row || []).map((value) => String(value ?? '').trim());
 }
 
+function sampleValues(
+  rows: unknown[][],
+  headerRowIndex: number,
+  sourceFields: string[]
+): Record<string, string[]> {
+  return Object.fromEntries(sourceFields.flatMap((sourceField, columnIndex) => {
+    if (!sourceField) return [];
+    const values: string[] = [];
+    for (const row of rows.slice(headerRowIndex + 1)) {
+      const value = String(row?.[columnIndex] ?? '').trim();
+      if (value) values.push(value);
+      if (values.length === 3) break;
+    }
+    return [[sourceField, values] as const];
+  }));
+}
+
 export function inspectResearchWorkbook(bytes: Uint8Array): DataConvResearchWorkbookInspection {
   const firstSheet = readXlsxWorkbook(bytes)[0];
   if (!firstSheet) throw new Error('Research workbook does not contain a worksheet');
@@ -24,16 +41,21 @@ export function inspectResearchWorkbook(bytes: Uint8Array): DataConvResearchWork
     return {
       mode: 'embedded-api-config',
       apiConfig,
+      sheetName: firstSheet.name,
       sourceFields: sourceFields.filter(Boolean),
       mappings,
-      dataHeaderRowIndex: 2
+      sampleValuesBySourceField: sampleValues(rows, 2, sourceFields),
+      // DataConv's schemaConfig uses one-based worksheet row numbers.
+      dataHeaderRowIndex: 3
     };
   }
   return {
     mode: 'manual-mapping',
+    sheetName: firstSheet.name,
     sourceFields: firstRow.filter(Boolean),
     mappings: [],
-    dataHeaderRowIndex: 0
+    sampleValuesBySourceField: sampleValues(rows, 0, firstRow.filter(Boolean)),
+    dataHeaderRowIndex: 1
   };
 }
 
