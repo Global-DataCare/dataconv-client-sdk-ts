@@ -343,6 +343,30 @@ For DIDComm polling responses, the SDK also exposes:
 
 ## Human coding review in a portal
 
+Pending review is durable and study-scoped. Reopen it from stored
+ResearchSubject drafts instead of polling an old upload thread:
+
+```ts
+await client.preparePendingCodingReviews({
+  authorizationToken,
+  researchStudy: { reference: 'ResearchStudy/study-one' },
+})
+const drafts = await client.searchPendingCodingReviews({
+  authorizationToken,
+  researchStudy: { reference: 'ResearchStudy/study-one' },
+})
+const page = client.getCodingReviewPage(drafts, { page: 1, pageSize: 25 })
+await client.reviewPendingCodingProposals({
+  authorizationToken,
+  researchStudy: { reference: 'ResearchStudy/study-one' },
+  codingReviews: [decision],
+})
+```
+
+Preparation is idempotent and exists for stored canonical `*-text` claims that
+predate proposal materialization. It does not repeat the source upload and does
+not select a terminology candidate automatically.
+
 DataConv `_upload-response` returns every primary converted resource directly
 in `body.data[].resource`. A ResearchSubject's terminology candidates therefore
 live at `body.data[].resource.contained[].meta.codingProposals[]`; there is no

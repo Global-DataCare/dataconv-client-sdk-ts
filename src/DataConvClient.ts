@@ -52,6 +52,11 @@ import type {
   DataConvSearchBundle,
   DataConvSearchOptions,
   DataConvJobSearchOptions,
+  DataConvPendingCodingReviewSearchOptions,
+  DataConvPrepareCodingReviewOptions,
+  DataConvPrepareCodingReviewResult,
+  DataConvStudyCodingReviewOptions,
+  DataConvStudyCodingReviewResult,
   DataConvTaskResource,
   DataConvTenantConfigPollOptions,
   DataConvUploadDidCommOptions,
@@ -354,7 +359,7 @@ export class DataConvClient {
   }
 
   getCodingReviewPage(
-    response: DataConvDidCommResponse<ConvertedBundleResource> | undefined = this.lastConversionResponse,
+    response: DataConvDidCommResponse<ConvertedBundleResource> | DataConvSearchBundle<ConvertedBundleResource> | undefined = this.lastConversionResponse,
     options: DataConvCodingReviewPageOptions = {}
   ): DataConvCodingReviewPage {
     return codingReviewPage(response, options);
@@ -958,6 +963,99 @@ export class DataConvClient {
       throw unexpectedResponseError('searchConversionJobs', response.status, response.data);
     }
     return response.data as DataConvSearchBundle<DataConvTaskResource>;
+  }
+
+  /** Materializes review proposals for durable local text without repeating the import. */
+  async preparePendingCodingReviews(
+    options: DataConvPrepareCodingReviewOptions
+  ): Promise<DataConvPrepareCodingReviewResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/$prepare-review`,
+      headers,
+      body: {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'study', valueReference: { reference: study } }],
+      },
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('preparePendingCodingReviews', response.status, response.data);
+    }
+    return response.data as DataConvPrepareCodingReviewResult;
+  }
+
+  /** Loads durable pending proposals for one authorized study, without a conversion thid. */
+  async searchPendingCodingReviews(
+    options: DataConvPendingCodingReviewSearchOptions
+  ): Promise<DataConvSearchBundle<ConvertedBundleResource>> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    const count = options.count ?? 100;
+    const offset = options.offset ?? 0;
+    if (!Number.isInteger(count) || count < 1 || count > 100) {
+      throw new Error('count must be between 1 and 100');
+    }
+    if (!Number.isInteger(offset) || offset < 0) {
+      throw new Error('offset must be zero or greater');
+    }
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/$review-pending`,
+      headers,
+      body: {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'study', valueReference: { reference: study } },
+          { name: '_count', valueInteger: count },
+          { name: '_offset', valueInteger: offset },
+        ],
+      },
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('searchPendingCodingReviews', response.status, response.data);
+    }
+    return response.data as DataConvSearchBundle<ConvertedBundleResource>;
+  }
+
+  /** Applies review decisions to durable study drafts without relying on a retained job. */
+  async reviewPendingCodingProposals(
+    options: DataConvStudyCodingReviewOptions
+  ): Promise<DataConvStudyCodingReviewResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    if (!Array.isArray(options.codingReviews) || options.codingReviews.length < 1 || options.codingReviews.length > 100) {
+      throw new Error('codingReviews must contain between 1 and 100 reviews');
+    }
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/$review`,
+      headers,
+      body: {
+        researchStudy: { reference: study },
+        codingReviews: options.codingReviews,
+      },
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('reviewPendingCodingProposals', response.status, response.data);
+    }
+    return response.data as DataConvStudyCodingReviewResult;
   }
 
   private async pollUntilComplete<T>(
