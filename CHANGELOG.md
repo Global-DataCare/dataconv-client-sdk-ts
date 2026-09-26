@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.7 - 2026-09-25
+
+- Search governed terminology sources for one existing study proposal and
+  persist the server-returned candidates before a professional selects one.
+- Keep proposal resource type and claim immutable so a review search cannot
+  disguise an incorrectly mapped DiagnosticReport as a Condition.
+
 ## 0.5.6 - 2026-09-24
 
 - List tenant mapping configurations available to an authorized importer and

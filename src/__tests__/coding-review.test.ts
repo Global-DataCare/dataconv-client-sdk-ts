@@ -61,6 +61,11 @@ function conversionResponse(): DataConvDidCommResponse<ConvertedBundleResource> 
                     status: 'proposed',
                     field: 'Condition.code',
                     inputText: 'otitis',
+                    language: 'es-ES',
+                    fhirVersion: 'R4',
+                    sector: 'animal-care',
+                    jurisdiction: 'CA-BC',
+                    subjectKind: 'animal',
                     rowContext: { species: 'canine' },
                     candidates: [{
                       id: 'candidate-externa',
@@ -175,6 +180,9 @@ describe('DataConv coding review contract', () => {
       proposalId: 'proposal-1',
       state: 'proposed',
       draftState: 'draft'
+    });
+    expect(firstPage.items[0]).toMatchObject({
+      language: 'es-ES', fhirVersion: 'R4', sector: 'animal-care', jurisdiction: 'CA-BC', subjectKind: 'animal'
     });
     expect(secondPage.items).toEqual([]);
 

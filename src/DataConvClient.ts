@@ -53,6 +53,8 @@ import type {
   DataConvSearchOptions,
   DataConvJobSearchOptions,
   DataConvPendingCodingReviewSearchOptions,
+  DataConvPendingCodingCandidateSearchOptions,
+  DataConvPendingCodingCandidateSearchResult,
   DataConvPrepareCodingReviewOptions,
   DataConvPrepareCodingReviewResult,
   DataConvStudyCodingReviewOptions,
@@ -1071,6 +1073,48 @@ export class DataConvClient {
       throw unexpectedResponseError('searchPendingCodingReviews', response.status, response.data);
     }
     return response.data as DataConvSearchBundle<ConvertedBundleResource>;
+  }
+
+  /** Searches governed catalogs and attaches results to one authorized pending proposal. */
+  async searchPendingCodingCandidates(
+    options: DataConvPendingCodingCandidateSearchOptions
+  ): Promise<DataConvPendingCodingCandidateSearchResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    const resourceType = requireText(options.resourceType, 'resourceType');
+    const resourceId = requireText(options.resourceId, 'resourceId');
+    const proposalId = requireText(options.proposalId, 'proposalId');
+    const text = requireText(options.text, 'text');
+    const language = requireText(options.language, 'language');
+    const sources = options.sources ?? [];
+    if (text.length < 2 || text.length > 160) throw new Error('text must contain between 2 and 160 characters');
+    if (!/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(language)) throw new Error('language must be a valid BCP 47 tag');
+    if (sources.length > 10 || sources.some(source => !/^[A-Z][A-Z0-9_]{1,31}$/.test(source))) {
+      throw new Error('sources must contain at most ten canonical source ids');
+    }
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/$review-candidates`,
+      headers,
+      body: {
+        researchStudy: { reference: study },
+        resourceType,
+        resourceId,
+        proposalId,
+        text,
+        language,
+        sources,
+      },
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('searchPendingCodingCandidates', response.status, response.data);
+    }
+    return response.data as DataConvPendingCodingCandidateSearchResult;
   }
 
   /** Applies review decisions to durable study drafts without relying on a retained job. */

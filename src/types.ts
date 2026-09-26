@@ -495,6 +495,11 @@ export interface DataConvCodingProposal {
   readonly status: DataConvCodingProposalStatus;
   readonly field: string;
   readonly inputText: string;
+  readonly language?: string;
+  readonly fhirVersion?: string;
+  readonly sector?: string;
+  readonly jurisdiction?: string;
+  readonly subjectKind?: string;
   readonly rowContext: Readonly<Record<string, string>>;
   readonly candidates: readonly DataConvCodingCandidate[];
   readonly selectedCandidateId?: string;
@@ -630,6 +635,25 @@ export interface DataConvPrepareCodingReviewResult {
   preparedSubjectCount: number;
   proposalCount: number;
   candidateCount: number;
+}
+
+/** Governed terminology search attached to one existing pending proposal. */
+export interface DataConvPendingCodingCandidateSearchOptions extends DataConvPrepareCodingReviewOptions {
+  resourceType: string;
+  resourceId: string;
+  proposalId: string;
+  text: string;
+  language: string;
+  sources?: string[];
+}
+
+export interface DataConvPendingCodingCandidateSearchResult {
+  proposalId: string;
+  resourceType: string;
+  resourceId: string;
+  field: string;
+  query: Readonly<{ text: string; language: string; sources: readonly string[] }>;
+  candidates: readonly DataConvCodingCandidate[];
 }
 
 /** Explicit human decisions applied to durable drafts independently of job retention. */

@@ -58,6 +58,8 @@ export type {
   DataConvSearchOptions,
   DataConvJobSearchOptions,
   DataConvPendingCodingReviewSearchOptions,
+  DataConvPendingCodingCandidateSearchOptions,
+  DataConvPendingCodingCandidateSearchResult,
   DataConvPrepareCodingReviewOptions,
   DataConvPrepareCodingReviewResult,
   DataConvStudyCodingReviewOptions,
