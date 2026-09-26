@@ -72,6 +72,11 @@ function codingProposal(value: unknown): DataConvCodingProposal | undefined {
     status,
     field,
     inputText: text(item.inputText),
+    ...(text(item.language) ? { language: text(item.language) } : {}),
+    ...(text(item.fhirVersion) ? { fhirVersion: text(item.fhirVersion) } : {}),
+    ...(text(item.sector) ? { sector: text(item.sector) } : {}),
+    ...(text(item.jurisdiction) ? { jurisdiction: text(item.jurisdiction) } : {}),
+    ...(text(item.subjectKind) ? { subjectKind: text(item.subjectKind) } : {}),
     rowContext: Object.fromEntries(
       Object.entries(rowContext)
         .filter(([, entry]) => typeof entry === 'string')

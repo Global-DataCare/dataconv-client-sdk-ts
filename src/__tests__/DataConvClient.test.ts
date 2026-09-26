@@ -873,6 +873,15 @@ describe('DataConvClient', () => {
       .mockResolvedValueOnce({
         status: 200,
         headers: {},
+        data: {
+          proposalId: 'proposal-1', resourceType: 'Condition', resourceId: 'condition-1',
+          field: 'Condition.code', query: { text: 'corneal ulcer', language: 'en', sources: ['ICD10'] },
+          candidates: [{ id: 'candidate-1', system: 'http://hl7.org/fhir/sid/icd-10', code: 'H16.0', display: 'Corneal ulcer', source: 'ICD10' }],
+        }
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: {},
         data: { status: 'success', reviewedProposalCount: 1, promotedSubjectCount: 1 }
       });
 
@@ -885,6 +894,16 @@ describe('DataConvClient', () => {
       authorizationToken: 'study-review-token',
       count: 25,
       offset: 0,
+    });
+    await client.searchPendingCodingCandidates({
+      researchStudy,
+      authorizationToken: 'study-review-token',
+      resourceType: 'Condition',
+      resourceId: 'condition-1',
+      proposalId: 'proposal-1',
+      text: 'corneal ulcer',
+      language: 'en',
+      sources: ['ICD10'],
     });
     await client.reviewPendingCodingProposals({
       researchStudy,
@@ -923,6 +942,23 @@ describe('DataConvClient', () => {
       },
     });
     expect(mockedAxios.request.mock.calls[2]?.[0]).toMatchObject({
+      method: 'POST',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/$review-candidates',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer study-review-token',
+      },
+      data: {
+        researchStudy,
+        resourceType: 'Condition',
+        resourceId: 'condition-1',
+        proposalId: 'proposal-1',
+        text: 'corneal ulcer',
+        language: 'en',
+        sources: ['ICD10'],
+      },
+    });
+    expect(mockedAxios.request.mock.calls[3]?.[0]).toMatchObject({
       method: 'POST',
       url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/$review',
       headers: {
