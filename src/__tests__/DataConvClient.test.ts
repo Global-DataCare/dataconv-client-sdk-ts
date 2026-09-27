@@ -237,6 +237,26 @@ describe('DataConvClient', () => {
     }));
   });
 
+  it('deletes one exact tenant configuration with the controller token', async () => {
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: { deleted: true, id: 'cfg-1' },
+    });
+
+    const result = await client.deleteTenantConfig({
+      authorizationToken: 'controller-token',
+      configId: 'cfg-1',
+    });
+
+    expect(result).toEqual({ deleted: true, id: 'cfg-1' });
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'DELETE',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/config/cfg-1',
+      headers: { Authorization: 'Bearer controller-token' },
+    }));
+  });
+
   it('fetches the well-known api-config document and normalizes frontend fields', async () => {
     mockedAxios.request.mockResolvedValueOnce({
       status: 200,

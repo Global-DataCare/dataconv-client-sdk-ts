@@ -232,6 +232,20 @@ export interface DataConvTenantConfigSearchOptions {
   offset?: number;
 }
 
+export interface DataConvTenantConfigDeleteOptions {
+  alternateName?: string;
+  tenantId?: string;
+  jurisdiction?: string;
+  sector?: string;
+  authorizationToken: string;
+  configId: string;
+}
+
+export interface DataConvTenantConfigDeleteResult {
+  deleted: true;
+  id: string;
+}
+
 export interface DataConvTenantConfigCatalog<TFieldMap = FieldsGenericCare> {
   total: number;
   data: TenantAdapterConfigResource<TFieldMap>[];
