@@ -49,6 +49,8 @@ export type {
   DataConvResearchWorkbookInspection,
   DataConvTenantConfigCloneOptions,
   DataConvTenantConfigSearchOptions,
+  DataConvTenantConfigDeleteOptions,
+  DataConvTenantConfigDeleteResult,
   DataConvTenantConfigCatalog,
   DataConvPatchOptions,
   DataConvPatchResponse,

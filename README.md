@@ -99,7 +99,15 @@ await client.createTenantConfigAndWait({
   authorizationToken,
   entries: [entry],
 });
+
+await client.deleteTenantConfig({
+  authorizationToken,
+  configId: source.id!,
+});
 ```
+
+Deleting a reusable configuration requires `dataconv.config.write` and does
+not delete conversion jobs or generated results.
 
 For the Pinol workbook, keep `Anamnesis -> concept`; changing
 `Diagnostico -> concept` would collide with that existing mapping. Use

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.8 - 2026-09-26
+
+- Delete one exact tenant-owned mapping configuration through the DataConv
+  catalog with a controller bearer token.
+- Validate the deletion response and keep configuration removal distinct from
+  existing conversion jobs and results.
+
 ## 0.5.7 - 2026-09-25
 
 - Search governed terminology sources for one existing study proposal and

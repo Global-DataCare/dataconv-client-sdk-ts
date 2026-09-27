@@ -62,6 +62,8 @@ import type {
   DataConvTaskResource,
   DataConvTenantConfigPollOptions,
   DataConvTenantConfigSearchOptions,
+  DataConvTenantConfigDeleteOptions,
+  DataConvTenantConfigDeleteResult,
   DataConvTenantConfigCatalog,
   DataConvUploadDidCommOptions,
   DataConvUploadResult,
@@ -576,6 +578,29 @@ export class DataConvClient {
       total: Number(catalog.total ?? 0),
       data: Array.isArray(catalog.data) ? catalog.data : [],
     };
+  }
+
+  async deleteTenantConfig(
+    options: DataConvTenantConfigDeleteOptions
+  ): Promise<DataConvTenantConfigDeleteResult> {
+    const tenantId = resolveConfigTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const authorizationToken = requireText(options.authorizationToken, 'authorizationToken');
+    const configId = requireText(options.configId, 'configId');
+    const response = await this.request({
+      method: 'DELETE',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/config/${encodeURIComponent(configId)}`,
+      headers: { Authorization: `Bearer ${authorizationToken}` },
+    });
+    if (response.status !== 200) {
+      throw new Error(`Unexpected deleteTenantConfig response status: ${response.status}`);
+    }
+    const result = response.data as Partial<DataConvTenantConfigDeleteResult>;
+    if (result.deleted !== true || typeof result.id !== 'string' || !result.id) {
+      throw new Error('Invalid deleteTenantConfig response');
+    }
+    return { deleted: true, id: result.id };
   }
 
   async createConfig(options: CreateTenantConfigOptions): Promise<DataConvCreateResult> {
