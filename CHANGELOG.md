@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.9 - 2026-09-29
+
+- Reclassify one unresolved study coding proposal to an explicit governed
+  resource and flat-claim target before searching compatible terminology.
+- Discard only the wholly unresolved draft graph correlated to one exact
+  ResearchStudy import thread while retaining its Task audit history.
+
 ## 0.5.8 - 2026-09-26
 
 - Delete one exact tenant-owned mapping configuration through the DataConv

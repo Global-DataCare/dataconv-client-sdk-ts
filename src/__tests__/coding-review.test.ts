@@ -236,4 +236,59 @@ describe('DataConv coding review contract', () => {
     expect(() => client.getCodingReviewPage(conversionResponse(), { page: 1, pageSize: 101 }))
       .toThrow('pageSize must be between 1 and 100');
   });
+
+  it('reclassifies one pending proposal before terminology search', async () => {
+    const client = createClient();
+    const researchStudy = { reference: 'ResearchStudy/study-one' };
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        proposalId: review.proposalId,
+        resourceType: 'Condition',
+        resourceId: 'condition-reclassified',
+        field: 'Condition.code'
+      }
+    });
+
+    const result = await client.reclassifyPendingCodingProposal({
+      researchStudy,
+      authorizationToken: 'review-token',
+      resourceType: 'DiagnosticReport',
+      resourceId: 'diagnostic-report-one',
+      proposalId: review.proposalId,
+      targetResourceType: 'Condition',
+      targetField: 'Condition.code'
+    });
+
+    expect(result).toMatchObject({ resourceType: 'Condition', field: 'Condition.code' });
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: expect.stringContaining('/ResearchSubject/$review-reclassify'),
+      data: expect.objectContaining({ researchStudy, targetResourceType: 'Condition', targetField: 'Condition.code' })
+    }));
+  });
+
+  it('discards only the pending draft identified by study and import thread', async () => {
+    const client = createClient();
+    const researchStudy = { reference: 'ResearchStudy/study-one' };
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: { thid: 'conversion-1', discardedSubjectCount: 1, discardedResourceCount: 3 }
+    });
+
+    const result = await client.discardPendingCodingImport({
+      researchStudy,
+      authorizationToken: 'review-token',
+      thid: 'conversion-1'
+    });
+
+    expect(result.discardedSubjectCount).toBe(1);
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: expect.stringContaining('/ResearchSubject/$review-discard'),
+      data: { researchStudy, thid: 'conversion-1' }
+    }));
+  });
 });
