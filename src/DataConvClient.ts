@@ -55,6 +55,10 @@ import type {
   DataConvPendingCodingReviewSearchOptions,
   DataConvPendingCodingCandidateSearchOptions,
   DataConvPendingCodingCandidateSearchResult,
+  DataConvPendingCodingReclassificationOptions,
+  DataConvPendingCodingReclassificationResult,
+  DataConvPendingCodingImportDiscardOptions,
+  DataConvPendingCodingImportDiscardResult,
   DataConvPrepareCodingReviewOptions,
   DataConvPrepareCodingReviewResult,
   DataConvStudyCodingReviewOptions,
@@ -1140,6 +1144,65 @@ export class DataConvClient {
       throw unexpectedResponseError('searchPendingCodingCandidates', response.status, response.data);
     }
     return response.data as DataConvPendingCodingCandidateSearchResult;
+  }
+
+  /** Moves one unresolved local-text proposal to an explicit FHIR target before searching terminology. */
+  async reclassifyPendingCodingProposal(
+    options: DataConvPendingCodingReclassificationOptions
+  ): Promise<DataConvPendingCodingReclassificationResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const researchStudy = { reference: requireText(options.researchStudy?.reference, 'researchStudy.reference') };
+    const resourceType = requireText(options.resourceType, 'resourceType');
+    const resourceId = requireText(options.resourceId, 'resourceId');
+    const proposalId = requireText(options.proposalId, 'proposalId');
+    const targetResourceType = requireText(options.targetResourceType, 'targetResourceType');
+    const targetField = requireText(options.targetField, 'targetField');
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/$review-reclassify`,
+      headers,
+      body: {
+        researchStudy,
+        resourceType,
+        resourceId,
+        proposalId,
+        targetResourceType,
+        targetField
+      },
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('reclassifyPendingCodingProposal', response.status, response.data);
+    }
+    return response.data as DataConvPendingCodingReclassificationResult;
+  }
+
+  /** Deletes only the entirely pending draft graph correlated by ResearchStudy and import thid. */
+  async discardPendingCodingImport(
+    options: DataConvPendingCodingImportDiscardOptions
+  ): Promise<DataConvPendingCodingImportDiscardResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const researchStudy = { reference: requireText(options.researchStudy?.reference, 'researchStudy.reference') };
+    const thid = requireText(options.thid, 'thid');
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/$review-discard`,
+      headers,
+      body: { researchStudy, thid },
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('discardPendingCodingImport', response.status, response.data);
+    }
+    return response.data as DataConvPendingCodingImportDiscardResult;
   }
 
   /** Applies review decisions to durable study drafts without relying on a retained job. */

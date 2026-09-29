@@ -670,6 +670,33 @@ export interface DataConvPendingCodingCandidateSearchResult {
   candidates: readonly DataConvCodingCandidate[];
 }
 
+/** Explicit relocation of one unresolved local-text proposal before candidate search. */
+export interface DataConvPendingCodingReclassificationOptions extends DataConvPrepareCodingReviewOptions {
+  resourceType: string;
+  resourceId: string;
+  proposalId: string;
+  targetResourceType: string;
+  targetField: string;
+}
+
+export interface DataConvPendingCodingReclassificationResult {
+  proposalId: string;
+  resourceType: string;
+  resourceId: string;
+  field: string;
+}
+
+/** Exact pending import draft selected from the study's Task history. */
+export interface DataConvPendingCodingImportDiscardOptions extends DataConvPrepareCodingReviewOptions {
+  thid: string;
+}
+
+export interface DataConvPendingCodingImportDiscardResult {
+  thid: string;
+  discardedSubjectCount: number;
+  discardedResourceCount: number;
+}
+
 /** Explicit human decisions applied to durable drafts independently of job retention. */
 export interface DataConvStudyCodingReviewOptions {
   alternateName?: string;
