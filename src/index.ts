@@ -82,7 +82,12 @@ export type {
   TenantAdapterConfigResource,
   DataConvMappingConfig
 } from './types.js';
-export { availableResearchSourceFields, inspectResearchWorkbook } from './workbook-inspection.js';
+export {
+  availableResearchSourceFields,
+  extractResearchWorkbookSheet,
+  inspectResearchWorkbook,
+  inspectResearchWorkbookSheets,
+} from './workbook-inspection.js';
 export { cloneTenantConfig } from './tenant-config.js';
 export {
   SubjectFieldKeys,

@@ -1,7 +1,13 @@
-// Flow contract: research import detects embedded API-CONFIG mappings or exposes unique source columns for explicit field-by-field mapping.
+// Flow contract: reuse shared test fixtures and canonical types; do not introduce duplicated literals.
+// Research import inspects every worksheet independently and isolates exactly one selected sheet for its homonymous ResearchStudy.
 
-import { availableResearchSourceFields, inspectResearchWorkbook } from '../workbook-inspection';
-import { buildXlsxWorkbook } from '../xlsx-codec';
+import {
+  availableResearchSourceFields,
+  extractResearchWorkbookSheet,
+  inspectResearchWorkbook,
+  inspectResearchWorkbookSheets,
+} from '../workbook-inspection';
+import { buildXlsxWorkbook, readXlsxWorkbook } from '../xlsx-codec';
 
 function workbookBytes(rows: unknown[][]): Uint8Array {
   return buildXlsxWorkbook([{ name: 'Research', rows }]);
@@ -29,6 +35,45 @@ it('reads API-CONFIG from cell A1 and pairs row two server fields with row three
     FECHA: ['2026-09-04'],
     DIAGNOSTICO: ['Otitis'],
   });
+});
+
+it('inspects every worksheet and isolates only the sheet selected for the homonymous study', () => {
+  // Sheet names and markers are the workbook-routing behavior under test.
+  const bytes = buildXlsxWorkbook([
+    { name: 'Canitas 2', rows: [
+      ['API-CONFIG:language=es:software-id=canitas-2'],
+      ['subject_id', 'Immunization.vaccine-code-text'],
+      ['PACIENTE', 'VACUNA'],
+      ['animal-1', 'rabia'],
+    ] },
+    { name: 'Pinol Vepahi', rows: [
+      ['API-CONFIG:language=es:software-id=pinol-vepahi'],
+      ['subject_id', 'Condition.code-text'],
+      ['PACIENTE', 'DIAGNOSTICO'],
+      ['animal-2', 'otitis'],
+    ] },
+  ]);
+
+  expect(inspectResearchWorkbookSheets(bytes).map(({ sheetName, apiConfig }) => ({ sheetName, apiConfig }))).toEqual([
+    { sheetName: 'Canitas 2', apiConfig: 'API-CONFIG:language=es:software-id=canitas-2' },
+    { sheetName: 'Pinol Vepahi', apiConfig: 'API-CONFIG:language=es:software-id=pinol-vepahi' },
+  ]);
+
+  const isolated = readXlsxWorkbook(extractResearchWorkbookSheet(bytes, 'Pinol Vepahi'));
+  expect(isolated).toEqual([{
+    name: 'Pinol Vepahi',
+    rows: [
+      ['API-CONFIG:language=es:software-id=pinol-vepahi'],
+      ['subject_id', 'Condition.code-text'],
+      ['PACIENTE', 'DIAGNOSTICO'],
+      ['animal-2', 'otitis'],
+    ],
+  }]);
+});
+
+it('fails closed when the requested ResearchStudy sheet does not exist', () => {
+  expect(() => extractResearchWorkbookSheet(workbookBytes([['PATIENT'], ['one']]), 'Missing study'))
+    .toThrow('Research workbook does not contain worksheet: Missing study');
 });
 
 it('keeps the first three non-empty samples per source column for mapping previews', () => {

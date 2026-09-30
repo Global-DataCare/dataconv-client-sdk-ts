@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.10 - 2026-09-30
+
+- Inspect every XLSX worksheet independently and isolate exactly one selected
+  worksheet into a one-sheet workbook so a portal can bind it to one
+  homonymous ResearchStudy without importing sibling-sheet rows.
+
 ## 0.5.9 - 2026-09-29
 
 - Reclassify one unresolved study coding proposal to an explicit governed
@@ -27,7 +33,7 @@
   forward the caller's scoped bearer token when creating and polling a named copy.
 - Clone a catalog configuration without retaining server-owned id, revision or
   audit fields, while replacing its field map with explicit UI choices.
-- Inspect the first worksheet with its name and up to three non-empty samples
+- Inspect a worksheet with its name and up to three non-empty samples
   per source column so portals can safely edit mappings before upload.
 - Report `dataHeaderRowIndex` with DataConv's one-based worksheet convention,
   avoiding a saved copy that reads API-CONFIG mapping keys as source headers.
