@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.11 - 2026-09-30
+
+- Permit a bounded page of up to 1,000 authorized pending ResearchSubject
+  coding-review drafts so large study reviews can use one DataConv scan instead
+  of repeatedly hydrating the same study in 100-subject pages.
+
 ## 0.5.10 - 2026-09-30
 
 - Inspect every XLSX worksheet independently and isolate exactly one selected
