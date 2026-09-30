@@ -912,7 +912,7 @@ describe('DataConvClient', () => {
     await client.searchPendingCodingReviews({
       researchStudy,
       authorizationToken: 'study-review-token',
-      count: 25,
+      count: 1000,
       offset: 0,
     });
     await client.searchPendingCodingCandidates({
@@ -956,7 +956,7 @@ describe('DataConvClient', () => {
         resourceType: 'Parameters',
         parameter: [
           { name: 'study', valueReference: researchStudy },
-          { name: '_count', valueInteger: 25 },
+          { name: '_count', valueInteger: 1000 },
           { name: '_offset', valueInteger: 0 },
         ],
       },

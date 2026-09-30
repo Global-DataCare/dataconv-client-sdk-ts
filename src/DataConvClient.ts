@@ -1076,8 +1076,8 @@ export class DataConvClient {
     const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
     const count = options.count ?? 100;
     const offset = options.offset ?? 0;
-    if (!Number.isInteger(count) || count < 1 || count > 100) {
-      throw new Error('count must be between 1 and 100');
+    if (!Number.isInteger(count) || count < 1 || count > 1000) {
+      throw new Error('count must be between 1 and 1000');
     }
     if (!Number.isInteger(offset) || offset < 0) {
       throw new Error('offset must be zero or greater');
