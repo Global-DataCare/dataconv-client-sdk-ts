@@ -81,9 +81,16 @@ The catalog is tenant-scoped and requires a controller DataConv token carrying
 list or copy organization mappings.
 
 ```ts
-import { cloneTenantConfig, inspectResearchWorkbook } from 'dataconv-client-sdk-ts';
+import {
+  cloneTenantConfig,
+  extractResearchWorkbookSheet,
+  inspectResearchWorkbookSheets,
+} from 'dataconv-client-sdk-ts';
 
-const inspection = inspectResearchWorkbook(workbookBytes);
+const inspections = inspectResearchWorkbookSheets(workbookBytes);
+const inspection = inspections.find(({ sheetName }) => sheetName === researchStudyTitle);
+if (!inspection) throw new Error('research_workbook_sheet_study_mismatch');
+const oneStudyWorkbook = extractResearchWorkbookSheet(workbookBytes, inspection.sheetName);
 const catalog = await client.listTenantConfigs({ authorizationToken });
 const source = catalog.data[0];
 const entry = cloneTenantConfig(source, {

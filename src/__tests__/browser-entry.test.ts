@@ -13,7 +13,9 @@ describe('browser package entry', () => {
     const browserSource = readFileSync('src/browser.ts', 'utf8');
 
     expect(manifest.exports?.['.']?.browser).toBe('./dist/browser.js');
-    expect(browserSource).toContain("export { availableResearchSourceFields, inspectResearchWorkbook } from './workbook-inspection.js'");
+    expect(browserSource).toContain('extractResearchWorkbookSheet');
+    expect(browserSource).toContain('inspectResearchWorkbookSheets');
+    expect(browserSource).toContain("from './workbook-inspection.js'");
     expect(browserSource).not.toContain('excel-generator');
     expect(browserSource).not.toContain('node:fs');
   });
