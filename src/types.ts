@@ -737,6 +737,8 @@ export interface DataConvSupportedField {
 export interface DataConvWellKnownApiConfig {
   language: string;
   supportedFields: Record<string, string>;
+  /** Legacy input field name to canonical DataConv/FHIR flat-claim field. */
+  fieldAliases: Record<string, string>;
   endpoints: Record<string, string>;
   allowedJurisdictions?: string[];
   allowedSectors?: string[];

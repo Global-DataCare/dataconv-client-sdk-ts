@@ -515,6 +515,15 @@ export class DataConvClient {
         .filter(([key, value]) => String(key || '').trim() && String(value || '').trim())
         .map(([key, value]) => [String(key).trim(), String(value).trim()])
     );
+    const fieldAliases = Object.fromEntries(
+      Object.entries(
+        raw.fieldAliases && typeof raw.fieldAliases === 'object'
+          ? raw.fieldAliases as Record<string, unknown>
+          : {}
+      )
+        .filter(([key, value]) => String(key || '').trim() && String(value || '').trim())
+        .map(([key, value]) => [String(key).trim(), String(value).trim()])
+    );
     const endpoints = Object.fromEntries(
       Object.entries(
         raw.endpoints && typeof raw.endpoints === 'object'
@@ -532,6 +541,7 @@ export class DataConvClient {
     return {
       language: String(raw.language || '').trim(),
       supportedFields,
+      fieldAliases,
       endpoints,
       allowedJurisdictions: Array.isArray(raw.allowedJurisdictions)
         ? raw.allowedJurisdictions.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)

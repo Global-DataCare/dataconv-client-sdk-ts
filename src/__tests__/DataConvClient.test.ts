@@ -267,6 +267,9 @@ describe('DataConvClient', () => {
           section: 'Departamento o sección',
           coverage_insurer: 'Identificador o nombre de la aseguradora'
         },
+        fieldAliases: {
+          'procedure_code-display': 'Procedure.code-display'
+        },
         endpoints: {
           upload: '/host/.../_upload'
         },
@@ -290,6 +293,9 @@ describe('DataConvClient', () => {
       { code: 'section', display: 'Departamento o sección' },
       { code: 'coverage_insurer', display: 'Identificador o nombre de la aseguradora' }
     ]);
+    expect(result.fieldAliases).toEqual({
+      'procedure_code-display': 'Procedure.code-display'
+    });
     expect(result.endpoints.upload).toBe('/host/.../_upload');
     expect(result.allowedJurisdictions).toEqual(['ES', 'PT']);
     expect(result.allowedSectors).toEqual(['onehealth-research']);
