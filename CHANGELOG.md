@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.12 - 2026-09-30
+
+- Preserve the official DataConv `fieldAliases` catalog so consumers can
+  normalize legacy spreadsheet field names to canonical flat-claim fields
+  without displaying duplicate aliases as selectable fields.
+
 ## 0.5.11 - 2026-09-30
 
 - Permit a bounded page of up to 1,000 authorized pending ResearchSubject
