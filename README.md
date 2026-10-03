@@ -373,12 +373,16 @@ const publicationResponse = await client.batchPromotion({
   softwareId: 'api-config'
 });
 
-// 8. Search promoted resources using lowercase FHIR parameters.
+// 8. Search subjects using one exact FHIR Parameters request.
 const searchResponse = await client.searchResources({
-  resourceType: 'DocumentReference',
-  searchParams: {
-    userselected: 'false',
-    date: 'ge2026-01-01'
+  resourceType: 'ResearchSubject',
+  parameters: {
+    resourceType: 'Parameters',
+    parameter: [
+      { name: 'ResearchSubject.study', valueReference: { reference: 'ResearchStudy/study-a' } },
+      { name: 'Condition.code:text', valueString: 'diabetes' },
+      { name: 'Observation.value-quantity', valueString: 'gt8' }
+    ]
   }
 });
 ```
@@ -754,7 +758,9 @@ export DATACONV_SERVICE_DID_MAP='{"did:web:dataconv-api.example.org":"http://127
 - `patchConversion()` defaults to `Composition/_patch`.
 - `batchPromotion()` defaults to `Patient/_batch`.
 - `searchResources()` resolves to `/publisher/cds-{jurisdiction}/v1/{sector}/{tenantId}/dataset/{resourceType}/_search`.
-- Search parameter names are normalized to lowercase (`userSelected` → `userselected`).
+- `parameters` sends an exact FHIR `Parameters` resource; qualified names keep
+  their `ResourceType` prefix. Legacy `searchParams` input is converted to the
+  same FHIR body and only its unqualified names are normalized to lowercase.
 - Search comparators are prefixed in the value: `ge2026-01-01`, `gt...`, `le...`, `lt...`.
 - The backend may require `vp_token` and/or `id_token` depending on `PRECONV_AUTH_MODE`.
 - CSV upload is modeled in the SDK but the current backend only accepts Excel/XLSX.

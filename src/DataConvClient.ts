@@ -6,6 +6,7 @@ import {
   headerValue,
   headersToObject,
   isFormData,
+  buildFhirParametersResource,
   normalizeSearchParams,
   normalizeSourceFormat,
   requireText,
@@ -1002,7 +1003,7 @@ export class DataConvClient {
       method: 'POST',
       url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/${resourceType}/_search`,
       headers,
-      body: searchParams
+      body: options.parameters || buildFhirParametersResource(searchParams)
     });
 
     if (response.status !== 200) {
