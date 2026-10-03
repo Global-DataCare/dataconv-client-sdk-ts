@@ -820,6 +820,8 @@ describe('DataConvClient', () => {
       resourceType: 'ResearchSubject',
       parameters: {
         resourceType: 'Parameters',
+        // Research cohort wire names stay resource-qualified:
+        // Condition.code:text -> Condition.code-text -> condition_code-text.
         parameter: [
           { name: 'ResearchSubject.study', valueReference: { reference: 'ResearchStudy/study-one' } },
           { name: 'Immunization.vaccine-code:text', valueString: 'rabia' },
@@ -844,6 +846,100 @@ describe('DataConvClient', () => {
           { name: 'Immunization.date', valueString: 'ge2026-01-01' }
         ]
       }
+    }));
+  });
+
+  // Flow contract: an authorized researcher opens one UUID from a study-scoped result and receives the complete document Bundle used by the shared health viewer.
+  it('materializes one ResearchSubject summary as a study-scoped document Bundle', async () => {
+    client.setIdToken('study-session-token');
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        resourceType: 'Bundle',
+        type: 'document',
+        entry: [{ resource: { resourceType: 'Composition', id: 'summary-subject-1' } }]
+      }
+    });
+
+    const response = await client.getResearchSubjectSummary({
+      researchStudy: { reference: 'ResearchStudy/study-one' },
+      identifier: 'urn:uuid:subject-1'
+    });
+
+    expect(response.type).toBe('document');
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/$summary',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer study-session-token'
+      },
+      data: {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'ResearchSubject.study', valueReference: { reference: 'ResearchStudy/study-one' } },
+          { name: 'ResearchSubject.identifier', valueUri: 'urn:uuid:subject-1' }
+        ]
+      }
+    }));
+  });
+
+  // Flow contract: a researcher marks one result without mutating the canonical twin, then creates a Patient Group and starts its asynchronous FHIR Bulk Data export.
+  it('saves a workset tag and starts a standard Group export for the selected cohort', async () => {
+    client.setIdToken('study-session-token');
+    mockedAxios.request
+      .mockResolvedValueOnce({ status: 200, headers: {}, data: { resourceType: 'Composition', id: 'selection-1' } })
+      .mockResolvedValueOnce({ status: 201, headers: { location: '/dataset/Group/group-1' }, data: {
+        resourceType: 'Group', id: 'group-1', type: 'animal', actual: true,
+        identifier: [{ value: 'ResearchStudy/study-one' }],
+        member: [
+          { entity: { reference: 'Patient/11111111-1111-4111-8111-111111111111' } },
+          { entity: { reference: 'Patient/22222222-2222-4222-8222-222222222222' } },
+        ],
+      } })
+      .mockResolvedValueOnce({ status: 202, headers: { 'content-location': '/dataset/bulk-status/export-1' }, data: '' });
+
+    await client.tagResearchSubject({
+      researchStudy: { reference: 'ResearchStudy/study-one' }, identifier: 'urn:uuid:subject-1',
+      tag: { system: 'urn:multibase:zResearcher', code: 'possible-candidate' },
+    });
+    const queued = await client.exportResearchSubjects({
+      researchStudy: { reference: 'ResearchStudy/study-one' },
+      groupType: 'animal',
+      identifiers: [
+        'urn:uuid:11111111-1111-4111-8111-111111111111',
+        'urn:uuid:22222222-2222-4222-8222-222222222222',
+      ],
+    });
+
+    expect(queued.group.id).toBe('group-1');
+    expect(queued.contentLocation).toBe('/dataset/bulk-status/export-1');
+    expect(mockedAxios.request).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/$tag',
+      data: { resourceType: 'Parameters', parameter: [
+        { name: 'ResearchSubject.study', valueReference: { reference: 'ResearchStudy/study-one' } },
+        { name: 'ResearchSubject.identifier', valueUri: 'urn:uuid:subject-1' },
+        { name: 'tag', valueCoding: { system: 'urn:multibase:zResearcher', code: 'possible-candidate' } },
+      ] },
+    }));
+    expect(mockedAxios.request).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/Group',
+      data: {
+        resourceType: 'Group', type: 'animal', actual: true,
+        identifier: [{ value: 'ResearchStudy/study-one' }],
+        member: [
+          { entity: { reference: 'Patient/11111111-1111-4111-8111-111111111111' } },
+          { entity: { reference: 'Patient/22222222-2222-4222-8222-222222222222' } },
+        ],
+      },
+    }));
+    expect(mockedAxios.request).toHaveBeenNthCalledWith(3, expect.objectContaining({
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/Group/group-1/$export',
+      headers: expect.objectContaining({ Prefer: 'respond-async' }),
+      data: { resourceType: 'Parameters', parameter: [
+        { name: '_outputFormat', valueString: 'application/fhir+ndjson' },
+      ] },
     }));
   });
 

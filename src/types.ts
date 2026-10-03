@@ -613,6 +613,63 @@ export interface DataConvSearchOptions {
   idToken?: string;
 }
 
+/** Study-bound request for the complete pseudonymous twin behind one search-result UUID. */
+export interface DataConvResearchSubjectSummaryOptions {
+  alternateName?: string;
+  tenantId?: string;
+  jurisdiction?: string;
+  sector?: string;
+  researchStudy: DataConvFhirReference;
+  identifier: string;
+  authorizationToken?: string;
+  idToken?: string;
+}
+
+/** FHIR document Bundle consumed by the same health-summary viewer as an individual twin. */
+export interface DataConvResearchSubjectSummaryBundle {
+  resourceType: 'Bundle';
+  type: 'document';
+  identifier?: Record<string, unknown>;
+  timestamp?: string;
+  entry: Array<DataConvSearchBundleEntry<Record<string, unknown>>>;
+  [key: string]: unknown;
+}
+
+export interface DataConvResearchSubjectTagOptions extends DataConvResearchSubjectSummaryOptions {
+  tag: Readonly<{ system: string; code: string }>;
+  /** False removes this researcher's marker instead of creating it. */
+  selected?: boolean;
+}
+
+export interface DataConvResearchSubjectExportOptions {
+  alternateName?: string;
+  tenantId?: string;
+  jurisdiction?: string;
+  sector?: string;
+  researchStudy: DataConvFhirReference;
+  identifiers: readonly string[];
+  groupType: 'person' | 'animal';
+  authorizationToken?: string;
+  idToken?: string;
+}
+
+export interface DataConvBulkExportGroup {
+  resourceType: 'Group';
+  id: string;
+  type: 'person' | 'animal';
+  actual: true;
+  identifier: Array<{ value: string }>;
+  member: Array<{ entity: DataConvFhirReference }>;
+}
+
+export interface DataConvBulkExportKickoff {
+  group: DataConvBulkExportGroup;
+  contentLocation: string;
+}
+
+/** @deprecated Use DataConvBulkExportKickoff; FHIR Bulk Data kickoff does not return a Task. */
+export type DataConvResearchSubjectExportTask = DataConvBulkExportKickoff;
+
 /** One DataConv conversion job projected through canonical flat Task claims. */
 export interface DataConvTaskResource {
   resourceType: 'Task';

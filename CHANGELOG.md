@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.6.1 - 2026-10-03
+
+- Materialize one authorized, study-bound ResearchSubject UUID as a FHIR
+  document Bundle for the shared health-summary viewer.
+- Create and remove researcher-owned tags, including the reversible `export`
+  workset marker.
+- Replace the former custom ResearchSubject export Task with FHIR Bulk Data:
+  create a native Patient-member Group and start `Group/{id}/$export`, returning
+  its `Content-Location` to the caller.
+
 ## 0.6.0 - 2026-10-02
 
 - Send search bodies as FHIR `Parameters`, preserve qualified

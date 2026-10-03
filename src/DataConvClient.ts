@@ -52,6 +52,11 @@ import type {
   DataConvPatchResponse,
   DataConvSearchBundle,
   DataConvSearchOptions,
+  DataConvResearchSubjectSummaryOptions,
+  DataConvResearchSubjectSummaryBundle,
+  DataConvResearchSubjectTagOptions,
+  DataConvResearchSubjectExportOptions,
+  DataConvBulkExportKickoff,
   DataConvJobSearchOptions,
   DataConvPendingCodingReviewSearchOptions,
   DataConvPendingCodingCandidateSearchOptions,
@@ -978,6 +983,15 @@ export class DataConvClient {
     return response.data as DataConvPatchResponse;
   }
 
+  /**
+   * Searches one DataConv resource collection with a FHIR `Parameters` body.
+   *
+   * ResearchSubject cohort searches are multi-resource: every business
+   * `parameter.name` must therefore be resource-qualified, for example
+   * `Condition.code:text`. DataConv maps that wire name to the canonical
+   * `Condition.code-text` claim and only its private database index uses
+   * `condition_code-text`. Callers must never send the physical key.
+   */
   async searchResources<TResource = Record<string, unknown>>(
     options: DataConvSearchOptions
   ): Promise<DataConvSearchBundle<TResource>> {
@@ -1011,6 +1025,116 @@ export class DataConvClient {
     }
 
     return response.data as DataConvSearchBundle<TResource>;
+  }
+
+  /** Materializes one authorized ResearchSubject as the document Bundle used by health viewers. */
+  async getResearchSubjectSummary(
+    options: DataConvResearchSubjectSummaryOptions
+  ): Promise<DataConvResearchSubjectSummaryBundle> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    const identifier = requireText(options.identifier, 'identifier');
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/$summary`,
+      headers,
+      body: {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'ResearchSubject.study', valueReference: { reference: study } },
+          { name: 'ResearchSubject.identifier', valueUri: identifier }
+        ]
+      }
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('getResearchSubjectSummary', response.status, response.data);
+    }
+    return response.data as DataConvResearchSubjectSummaryBundle;
+  }
+
+  async tagResearchSubject(options: DataConvResearchSubjectTagOptions): Promise<Record<string, unknown>> {
+    return this.researchSubjectOperation('$tag', options, [
+      { name: 'tag', valueCoding: {
+        system: requireText(options.tag?.system, 'tag.system'),
+        code: requireText(options.tag?.code, 'tag.code')
+      } },
+      ...(options.selected === undefined ? [] : [{ name: 'selected', valueBoolean: options.selected }])
+    ], 200) as Promise<Record<string, unknown>>;
+  }
+
+  async exportResearchSubjects(options: DataConvResearchSubjectExportOptions): Promise<DataConvBulkExportKickoff> {
+    if (!Array.isArray(options.identifiers) || !options.identifiers.length) throw new Error('identifiers is required');
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const members = [...new Set(options.identifiers.map(identifier => {
+      const value = requireText(identifier, 'identifier');
+      if (!/^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+        throw new Error('identifier must be a UUID URN');
+      }
+      return value.slice('urn:uuid:'.length).toLowerCase();
+    }))].map(id => ({ entity: { reference: `Patient/${id}` } }));
+    const created = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/Group`,
+      headers,
+      body: {
+        resourceType: 'Group', type: options.groupType, actual: true,
+        identifier: [{ value: study }], member: members,
+      },
+    });
+    if (created.status !== 201) throw unexpectedResponseError('Group create', created.status, created.data);
+    const group = created.data as DataConvBulkExportKickoff['group'];
+    const kickoff = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/Group/${encodeURIComponent(requireText(group.id, 'Group.id'))}/$export`,
+      headers: { ...headers, Prefer: 'respond-async', Accept: 'application/fhir+json' },
+      body: { resourceType: 'Parameters', parameter: [
+        { name: '_outputFormat', valueString: 'application/fhir+ndjson' },
+      ] },
+    });
+    if (kickoff.status !== 202) throw unexpectedResponseError('Group/$export', kickoff.status, kickoff.data);
+    const contentLocation = String(kickoff.headers['content-location'] || kickoff.headers['Content-Location'] || '').trim();
+    if (!contentLocation) throw new Error('Group/$export response is missing Content-Location');
+    return { group, contentLocation };
+  }
+
+  private async researchSubjectOperation(
+    operation: '$tag',
+    options: DataConvResearchSubjectTagOptions,
+    extraParameters: readonly Record<string, unknown>[],
+    expectedStatus: number
+  ): Promise<Record<string, unknown>> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const parameters: Record<string, unknown>[] = [
+      { name: 'ResearchSubject.study', valueReference: { reference: study } }
+    ];
+    parameters.push({ name: 'ResearchSubject.identifier', valueUri: requireText(options.identifier, 'identifier') });
+    parameters.push(...extraParameters);
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/${operation}`,
+      headers,
+      body: { resourceType: 'Parameters', parameter: parameters }
+    });
+    if (response.status !== expectedStatus) throw unexpectedResponseError(`ResearchSubject/${operation}`, response.status, response.data);
+    return response.data as Record<string, unknown>;
   }
 
   async searchConversionJobs(
