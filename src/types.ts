@@ -605,6 +605,10 @@ export interface DataConvSearchOptions {
   softwareId?: string;
   resourceType: string;
   searchParams?: Record<string, unknown>;
+  parameters?: Readonly<{
+    resourceType: 'Parameters';
+    parameter: readonly Readonly<Record<string, unknown>>[];
+  }>;
   authorizationToken?: string;
   idToken?: string;
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+## 0.6.0 - 2026-10-02
+
+- Send search bodies as FHIR `Parameters`, preserve qualified
+  `ResourceType.search-parameter` names, and allow callers to supply an exact
+  Parameters resource for one study-pinned multi-resource ResearchSubject
+  intersection request.
+
 ## 0.5.12 - 2026-09-30
 
 - Preserve the official DataConv `fieldAliases` catalog so consumers can

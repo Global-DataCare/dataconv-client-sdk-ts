@@ -116,7 +116,11 @@ export function normalizeSearchParams(searchParams: Record<string, unknown> | un
   }
 
   for (const [key, value] of Object.entries(searchParams)) {
-    const normalizedKey = String(key || '').trim().toLowerCase();
+    const rawKey = String(key || '').trim();
+    const separator = rawKey.indexOf('.');
+    const normalizedKey = separator > 0
+      ? `${rawKey.slice(0, separator)}.${rawKey.slice(separator + 1).toLowerCase()}`
+      : rawKey.toLowerCase();
     if (!normalizedKey) {
       continue;
     }
@@ -124,4 +128,24 @@ export function normalizeSearchParams(searchParams: Record<string, unknown> | un
   }
 
   return normalized;
+}
+
+export function buildFhirParametersResource(searchParams: Record<string, unknown>): {
+  resourceType: 'Parameters';
+  parameter: Array<Record<string, unknown>>;
+} {
+  const parameter: Array<Record<string, unknown>> = [];
+  for (const [name, rawValue] of Object.entries(searchParams)) {
+    const values = Array.isArray(rawValue) ? rawValue : [rawValue];
+    for (const value of values) {
+      if (typeof value === 'boolean') parameter.push({ name, valueBoolean: value });
+      else if (typeof value === 'number') parameter.push({
+        name,
+        [Number.isInteger(value) ? 'valueInteger' : 'valueDecimal']: value,
+      });
+      else if (typeof value === 'string' && value.trim()) parameter.push({ name, valueString: value.trim() });
+      else if (value !== undefined && value !== null) throw new TypeError('search_parameter_value_invalid');
+    }
+  }
+  return { resourceType: 'Parameters', parameter };
 }

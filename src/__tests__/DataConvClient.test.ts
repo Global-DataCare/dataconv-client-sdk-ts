@@ -791,7 +791,7 @@ describe('DataConvClient', () => {
     }));
   });
 
-  it('searches research resources with FHIR-like parameters', async () => {
+  it('posts resource-qualified research criteria as one FHIR Parameters resource', async () => {
     client.setIdToken('session-id-1');
     mockedAxios.request.mockResolvedValueOnce({
       status: 200,
@@ -817,24 +817,32 @@ describe('DataConvClient', () => {
     });
 
     const response = await client.searchResources({
-      resourceType: 'DocumentReference',
-      searchParams: {
-        userselected: 'false',
-        date: 'ge2026-01-01'
+      resourceType: 'ResearchSubject',
+      parameters: {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'ResearchSubject.study', valueReference: { reference: 'ResearchStudy/study-one' } },
+          { name: 'Immunization.vaccine-code:text', valueString: 'rabia' },
+          { name: 'Immunization.date', valueString: 'ge2026-01-01' }
+        ]
       }
     });
 
     expect(response.total).toBe(1);
     expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
       method: 'POST',
-      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/DocumentReference/_search',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/_search',
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer session-id-1'
       },
       data: {
-        userselected: 'false',
-        date: 'ge2026-01-01'
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'ResearchSubject.study', valueReference: { reference: 'ResearchStudy/study-one' } },
+          { name: 'Immunization.vaccine-code:text', valueString: 'rabia' },
+          { name: 'Immunization.date', valueString: 'ge2026-01-01' }
+        ]
       }
     }));
   });
@@ -1048,8 +1056,11 @@ describe('DataConvClient', () => {
         Authorization: 'Bearer session-id-1'
       },
       data: {
-        userselected: 'false',
-        date: 'ge2026-01-01'
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'userselected', valueString: 'false' },
+          { name: 'date', valueString: 'ge2026-01-01' }
+        ]
       }
     }));
   });
