@@ -885,6 +885,51 @@ describe('DataConvClient', () => {
     }));
   });
 
+  // Flow contract: an authorized researcher sends the reviewed document Bundle directly to one study; DataConv creates or extends that ResearchSubject without a Communication wrapper.
+  it('adds a direct document Bundle to a study-bound ResearchSubject', async () => {
+    client.setIdToken('study-session-token');
+    const bundle = {
+      resourceType: 'Bundle' as const,
+      type: 'document' as const,
+      entry: [
+        { resource: {
+          resourceType: 'Composition',
+          id: 'draft-subject-1',
+          subject: { reference: 'ResearchSubject/11111111-1111-4111-8111-111111111111' }
+        } },
+        { resource: {
+          resourceType: 'Condition',
+          id: 'condition-1',
+          meta: { claims: { code: 'urn:snomed:125605004' } }
+        } }
+      ]
+    };
+    mockedAxios.request.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      data: {
+        created: true,
+        researchSubject: { resourceType: 'ResearchSubject', id: '11111111-1111-4111-8111-111111111111' }
+      }
+    });
+
+    const response = await client.addResearchSubjectData({
+      researchStudy: { reference: 'ResearchStudy/study-one' },
+      bundle
+    });
+
+    expect(response.created).toBe(true);
+    expect(mockedAxios.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'POST',
+      url: '/publisher/cds-ES/v1/onehealth-research/clinic-demo/dataset/ResearchSubject/$add-data?study=ResearchStudy%2Fstudy-one',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer study-session-token'
+      },
+      data: bundle
+    }));
+  });
+
   // Flow contract: a researcher marks one result without mutating the canonical twin, then creates a Patient Group and starts its asynchronous FHIR Bulk Data export.
   it('saves a workset tag and starts a standard Group export for the selected cohort', async () => {
     client.setIdToken('study-session-token');

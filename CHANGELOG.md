@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.2 - 2026-10-07
+
+- Add `addResearchSubjectData`, which sends one reviewed FHIR document Bundle
+  directly to the study-bound `ResearchSubject/$add-data` operation without a
+  Communication wrapper.
+
 ## 0.6.1 - 2026-10-03
 
 - Materialize one authorized, study-bound ResearchSubject UUID as a FHIR

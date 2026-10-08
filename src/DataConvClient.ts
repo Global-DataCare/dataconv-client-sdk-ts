@@ -54,6 +54,8 @@ import type {
   DataConvSearchOptions,
   DataConvResearchSubjectSummaryOptions,
   DataConvResearchSubjectSummaryBundle,
+  DataConvResearchSubjectAddDataOptions,
+  DataConvResearchSubjectAddDataResult,
   DataConvResearchSubjectTagOptions,
   DataConvResearchSubjectExportOptions,
   DataConvBulkExportKickoff,
@@ -1056,6 +1058,33 @@ export class DataConvClient {
       throw unexpectedResponseError('getResearchSubjectSummary', response.status, response.data);
     }
     return response.data as DataConvResearchSubjectSummaryBundle;
+  }
+
+  /** Creates or extends one study-bound ResearchSubject from a reviewed document Bundle. */
+  async addResearchSubjectData(
+    options: DataConvResearchSubjectAddDataOptions
+  ): Promise<DataConvResearchSubjectAddDataResult> {
+    const tenantId = resolveTenantId(this.config, options.tenantId ?? options.alternateName);
+    const jurisdiction = resolveJurisdiction(this.config, options.jurisdiction);
+    const sector = resolveSector(this.config, options.sector);
+    const study = requireText(options.researchStudy?.reference, 'researchStudy.reference');
+    if (options.bundle?.resourceType !== 'Bundle' || options.bundle.type !== 'document' || !Array.isArray(options.bundle.entry)) {
+      throw new Error('bundle must be a FHIR document Bundle');
+    }
+    const authToken = String(options.authorizationToken || options.idToken || this.idToken || '').trim();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
+    const response = await this.request({
+      method: 'POST',
+      url: `/publisher/cds-${jurisdiction}/v1/${sector}/${tenantId}/dataset/ResearchSubject/$add-data?study=${encodeURIComponent(study)}`,
+      headers,
+      body: options.bundle
+    });
+    if (response.status !== 200) {
+      throw unexpectedResponseError('addResearchSubjectData', response.status, response.data);
+    }
+    return response.data as DataConvResearchSubjectAddDataResult;
   }
 
   async tagResearchSubject(options: DataConvResearchSubjectTagOptions): Promise<Record<string, unknown>> {

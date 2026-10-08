@@ -60,6 +60,8 @@ export type {
   DataConvSearchOptions,
   DataConvResearchSubjectSummaryOptions,
   DataConvResearchSubjectSummaryBundle,
+  DataConvResearchSubjectAddDataOptions,
+  DataConvResearchSubjectAddDataResult,
   DataConvResearchSubjectTagOptions,
   DataConvResearchSubjectExportOptions,
   DataConvResearchSubjectExportTask,
