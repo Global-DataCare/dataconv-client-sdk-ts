@@ -635,6 +635,23 @@ export interface DataConvResearchSubjectSummaryBundle {
   [key: string]: unknown;
 }
 
+/** Direct, reviewed clinical document to create or extend one study-bound digital twin. */
+export interface DataConvResearchSubjectAddDataOptions {
+  alternateName?: string;
+  tenantId?: string;
+  jurisdiction?: string;
+  sector?: string;
+  researchStudy: DataConvFhirReference;
+  bundle: DataConvResearchSubjectSummaryBundle;
+  authorizationToken?: string;
+  idToken?: string;
+}
+
+export interface DataConvResearchSubjectAddDataResult {
+  created: boolean;
+  researchSubject: Record<string, unknown>;
+}
+
 export interface DataConvResearchSubjectTagOptions extends DataConvResearchSubjectSummaryOptions {
   tag: Readonly<{ system: string; code: string }>;
   /** False removes this researcher's marker instead of creating it. */
