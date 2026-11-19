@@ -1,5 +1,6 @@
 export { DataConvClient } from './DataConvClient.js';
-export { DidCommMessage, DidCommAttachment } from 'gdc-common-utils-ts/utils/didcomm';
+export { DidCommMessage } from './didcomm.js';
+export type { DidCommAttachment } from './didcomm.js';
 export type {
   ConversionResultEntry,
   ConvertedBundleResource,
@@ -122,7 +123,7 @@ export {
   includeFileInMessage,
   getThidFromMessage,
   getDataResults
-} from 'gdc-common-utils-ts/utils/didcomm';
+} from './didcomm.js';
 export {
   getExcelTemplateData,
   generateTemplateExcel

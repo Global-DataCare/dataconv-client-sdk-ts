@@ -12,5 +12,4 @@ export default {
       useESM: true
     }
   },
-  transformIgnorePatterns: ['/node_modules/(?!gdc-common-utils-ts)'],
 };
