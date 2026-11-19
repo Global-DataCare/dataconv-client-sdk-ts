@@ -764,7 +764,7 @@ export DATACONV_SERVICE_DID_MAP='{"did:web:dataconv-api.example.org":"http://127
 - Search comparators are prefixed in the value: `ge2026-01-01`, `gt...`, `le...`, `lt...`.
 - The backend may require `vp_token` and/or `id_token` depending on `PRECONV_AUTH_MODE`.
 - CSV upload is modeled in the SDK but the current backend only accepts Excel/XLSX.
-- `gdc-common-utils-ts` is an npm dependency; this SDK adds concrete pre-conversion types on top of those DIDComm helpers.
+- The SDK exports plaintext DIDComm helpers and typed conversion requests. Node services can use `dataconv-client-sdk-ts/research-node` for the Demo study exchange and standalone report operations.
 - ICA VCs and `controller.publicKeyJwk` belong to the `_activate` onboarding flow. `DataConvClient` is used afterwards, once the tenant is already activated.
 
 ## Roadmap and Briefing

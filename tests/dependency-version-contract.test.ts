@@ -2,8 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-test('release pins the current common contract without a legacy nested copy', () => {
-  const manifest = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'));
-  expect(manifest.version).toBe('0.6.1');
-  expect(manifest.dependencies['gdc-common-utils-ts']).toBe('2.9.21');
+test('release dependency tree is independent of GDC', () => {
+  const lock = JSON.parse(readFileSync(resolve(process.cwd(), 'package-lock.json'), 'utf8'));
+  expect(Object.keys(lock.packages).filter(path => /(?:^|\/)node_modules\/(?:@[^/]+\/)?gdc-/u.test(path))).toEqual([]);
 });
