@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.6.4 - 2026-11-20
+
+- Export the Node research client for signed Demo study access, standalone
+  report imports, and study-scoped coding review.
 
 ## 0.6.2 - 2026-10-07
 
